@@ -1,0 +1,36 @@
+全部是python3
+
+bdpc_monitor.py  百度pc关键词分类分域名监控 
+安装：
+	PyQuery
+	openpyxl
+	requests
+使用：
+	更换target_domain 里面待监控的域名列表
+	关键词文件kwd.xlsx：有几类词就用几个sheet,sheet名字就是关键词所属类名,每个sheet最左边那列放对词
+	线程数自己更改
+
+结果：txt文件：记载当天每个站点下每类词排在首页的数量 
+	 可将每日结果保存到一个excel中,天数多了,可插入数据透视表 生成折线图,即能看到各站点各类词的升降趋势
+
+
+
+bdpc_cover1.py  百度pc覆盖率查询1
+计算规则：搜一个关键词 serp上同一个域名出现N个url排名 计算N次
+
+bdpc_cover2.py  百度pc覆盖率查询2
+计算规则：搜一个关键词 serp上同一个域名出现N个url排名 计算 1 次
+
+安装：
+	PyQuery
+	requests
+使用：
+	准备kwd.txt文件 关键词一行一个
+	线程数自己更改
+
+结果：txt文件
+
+
+问题：bdpc_monitor.py 运行一般没事 有时候会卡住不动,似乎进程被操作系统杀死了 具体原因待排查
+其他：老哥们若看得上眼 感觉哪有错再改把 内存、cpu层面的别唠了 毕竟是业余人士.
+

@@ -9,7 +9,7 @@ import queue
 import time
 from urllib.parse import urlparse
 
-class bdpcMonitor(threading.Thread):
+class bdpcCover(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -125,12 +125,12 @@ if __name__ == "__main__":
     threadLock = threading.Lock()  # 锁
     result = {}   # 初始结果保存字典
     success_num = 0  # 查询成功个数
-    q = bdpcMonitor.read_file('kwd.txt')
+    q = bdpcCover.read_file('kwd.txt')
     all_num = q.qsize() #总词数
 
     # 设置线程数
     for i in list(range(5)):
-        t = bdpcMonitor()
+        t = bdpcCover()
         t.setDaemon(True)
         t.start()
     q.join()

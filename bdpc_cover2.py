@@ -144,7 +144,7 @@ if __name__ == "__main__":
     q.join()
 
     # 结果保存文件
-    bdpcMonitor.save()
+    bdpcCover.save()
     end = time.time()
     print('\n关键词共{0}个,查询成功{1}个,耗时{2}min'.format(all_num,success_num,(end-start)/60) )
     print('结果为\n', result)

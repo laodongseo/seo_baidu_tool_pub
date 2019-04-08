@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-一个关键词serp上出现同一个域名N个url排名 则计算1次
+一个关键词serp上同一个域名出现N个url排名 计算1次，相当于计算首页词数
 """
 import requests
 from pyquery import PyQuery as pq
@@ -36,9 +36,8 @@ class bdpcCover(threading.Thread):
             return html
 
     # 获取某词serp源码上10条加密url
-    def get_encrpt_urls(self,url):
+    def get_encrpt_urls(self,html):
         encrypt_url_list = []
-        html = self.get_html(url)
         if html and '_百度搜索' in html:
             doc = pq(html)
             try:
@@ -65,37 +64,27 @@ class bdpcCover(threading.Thread):
             return r.headers['Location']
 
     # 获取某词serp源码首页排名真实url
-    def get_real_urls(self,url):
-        encrypt_url_list = self.get_encrpt_urls(url)
-        if encrypt_url_list:
-            real_url_list = [self.decrypt_url(encrypt_url) for encrypt_url in encrypt_url_list]
-            return real_url_list
-        else:
-            print('检查网页源代码',url)
+    def get_real_urls(self,encrypt_url_list):
+        real_url_list = [self.decrypt_url(encrypt_url) for encrypt_url in encrypt_url_list]
+        return real_url_list
 
-    # 提取url域名部分
-    def get_domain(self,origin_url):
+    # 提取某条url域名部分
+    def get_domain(self,real_url):
         try:
-           res = urlparse(origin_url)
+           res = urlparse(real_url)
         except Exception as e:
-           print (e,origin_url)
+           print (e,real_url)
            domain = "xxx"
         else:
            domain = res.netloc
         return domain
 
-    # 统计结果函数
-    def get_domains(self,url):
-        res_urls = self.get_real_urls(url)
-        if res_urls:
-            domain_list = [self.get_domain(real_url) for real_url in res_urls]
+    # 获取某词serp源码首页排名真实url的域名部分
+    def get_domains(self,real_url_list):
+            domain_list = [self.get_domain(real_url) for real_url in real_url_list]
             # 搜一个词 同一个域名多个url出现排名 只计算一次
             domain_set = set(domain_list)
-            for domain in domain_set:
-                if domain in result:
-                    result[domain]+=1
-                else:
-                    result[domain]=1
+            return domain_set
 
     # 线程函数
     def run(self):
@@ -103,16 +92,22 @@ class bdpcCover(threading.Thread):
         while 1:
             kwd = q.get()
             url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
-            try:
-                threadLock.acquire()
-                self.get_domains(url)
-                success_num += 1
-                print('查询成功{0}个'.format(success_num))
-            except Exception as e:
-                print(e)
-            finally:
-                print (kwd,'查询结束')
-                threadLock.release()
+            html = self.get_html(url)
+            encrypt_url_list = self.get_encrpt_urls(html)
+            real_url_list = self.get_real_urls(encrypt_url_list)
+            domain_set = self.get_domains(real_url_list)
+            if domain_set:
+                try:
+                    threadLock.acquire()
+                    for domain in domain_set:
+                        result[domain] = result[domain]+1 if domain in result else 1
+                    success_num += 1
+                    print('查询成功{0}个'.format(success_num))
+                except Exception as e:
+                    print(e)
+                finally:
+                    print (kwd,'查询结束')
+                    threadLock.release()
             q.task_done()
 
     # 保存数据
@@ -120,9 +115,11 @@ class bdpcCover(threading.Thread):
     def save():
         print ('开始save.....')
         res_sort = sorted(result.items(), key=lambda s: s[1], reverse=True)
+        print(res_sort)
         with open('result2.txt','w',encoding="utf-8") as f:
             for domain,value in res_sort:
-                    f.write(domain+'\t'+str(value)+'\n')
+                print(domain,type(domain),type(str(value)))
+                f.write(str(domain)+'\t'+str(value)+'\n')
 
 
 if __name__ == "__main__":
@@ -147,4 +144,3 @@ if __name__ == "__main__":
     bdpcCover.save()
     end = time.time()
     print('\n关键词共{0}个,查询成功{1}个,耗时{2}min'.format(all_num,success_num,(end-start)/60) )
-    print('结果为\n', result)

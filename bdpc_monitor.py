@@ -51,15 +51,14 @@ class bdpcMonitor(threading.Thread):
             return html
 
     # 获取某词serp源码上10条加密url
-    def get_encrpt_urls(self,url):
+    def get_encrpt_urls(self,html):
         encrypt_url_list = []
-        html = self.get_html(url)
         if html and '_百度搜索' in html:
             doc = pq(html)
             try:
                 a_list = doc('.t a').items()
             except Exception as e:
-                print('未提取到serp上的解密url', e, url)
+                print('未提取到serp上的解密url', e)
             else:
                 for a in a_list:
                     encrypt_url = a.attr('href')
@@ -67,7 +66,7 @@ class bdpcMonitor(threading.Thread):
                         encrypt_url_list.append(encrypt_url)
         return encrypt_url_list
 
-    # 解密某词serp源码的加密url
+    # 解密某条加密url
     def decrypt_url(self,encrypt_url,retry=1):
         try:
             encrypt_url = encrypt_url.replace('http://','https://')
@@ -80,13 +79,12 @@ class bdpcMonitor(threading.Thread):
             return r.headers['Location']
 
     # 获取某词serp源码首页排名真实url
-    def get_real_urls(self,url):
-        encrypt_url_list = self.get_encrpt_urls(url)
+    def get_real_urls(self,encrypt_url_list):
         if encrypt_url_list:
             real_url_list = [self.decrypt_url(encrypt_url) for encrypt_url in encrypt_url_list]
             return real_url_list
         else:
-            print('检查网页源代码',url)
+            return []
 
     # 统计每个域名排名的词数
     def run(self):
@@ -96,8 +94,15 @@ class bdpcMonitor(threading.Thread):
             # print(kwd_dict)
             for kwd,group in kwd_dict.items():
                 url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
-                real_urls = self.get_real_urls(url)
+                html = self.get_html(url)
+                encrypt_url_list = self.get_encrpt_urls(html)
+                real_urls = self.get_real_urls(encrypt_url_list)
                 if real_urls:
+                    # 可能有解密失败返回None的情况 干掉None 防止列表转字符串出错
+                    set_real_urls = set(real_urls)
+                    real_urls = [i for i in set_real_urls]
+                    real_urls.remove(None) if None in real_urls else real_urls
+                    # 将某词的serp上10条真实url合并为一个字符串
                     domain_str = ''.join(real_urls)
                     try:
                         threadLock.acquire()
@@ -143,7 +148,7 @@ if __name__ == "__main__":
     all_num = q.qsize()
 
     # 设置线程数
-    for i in list(range(10)):
+    for i in list(range(2)):
         t = bdpcMonitor()
         t.setDaemon(True)
         t.start()

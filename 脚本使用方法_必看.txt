@@ -33,10 +33,23 @@ bdpc_cover2.py  百度pc覆盖率查询2
 结果：txt文件
 
 bdpc_is_index.py 
-收录索引查询；查询url是否收录，若收录则搜索该url的title是否能检索到该url；
-准备url.txt【一行一个url，必须带http或者https】
-区分http://和https://
-区分http://aaa/bbb/和http://aaa/bbb
+	收录索引查询；查询url是否收录，若收录则搜索该url的title是否能检索到该url；
+	准备url.txt【一行一个url，必须带http或者https】
+	区分http://和https://
+	区分http://aaa/bbb/和http://aaa/bbb
+
+bdpc_rank1.py
+	kwd和url一对一查询
+	kwd_url.txt,每行关键词和url一对,中间用制表符(直接从excel复制)隔开,url必须加http或者https
+	区分http和https
+	区分http://aaa/bbb/和http://aaa/bbb
+	
+bdpc_rank2.py
+	关键词文件kwd.txt(一行一个)
+	指定待查询域名domain
+	domain不要带https或者http
+	结果保存文件格式：关键词 对应排名的url 及排名值
+	如果一个词某个域名下有2个url出现排名 取第一个
 
 bdpc_xiala.py 
 获取下拉词 准备kwd.txt  结果不去重

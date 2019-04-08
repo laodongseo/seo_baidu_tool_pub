@@ -20,7 +20,7 @@ bdpc_monitor.py  百度pc关键词分类分域名监控
 bdpc_cover1.py  百度pc覆盖率查询1
 	计算规则：搜一个关键词 serp上同一个域名出现N个url排名 计算N次
 
-	bdpc_cover2.py  百度pc覆盖率查询2
+bdpc_cover2.py  百度pc覆盖率查询2
 	计算规则：搜一个关键词 serp上同一个域名出现N个url排名 计算 1 次 ，相当于计算首页词的个数
 
 	安装：
@@ -32,31 +32,31 @@ bdpc_cover1.py  百度pc覆盖率查询1
 
 	结果：txt文件
 
-bdpc_is_index.py 
-	收录索引查询；查询url是否收录，若收录则搜索该url的title是否能检索到该url；
+bdpc_is_index.py 收录索引查询
+	查询url是否收录，若收录则搜索该url的title是否能检索到该url；
 	准备url.txt【一行一个url，必须带http或者https】
 	区分http://和https://
 	区分http://aaa/bbb/和http://aaa/bbb
 
-bdpc_rank1.py
+bdpc_rank1.py 排名查询1
 	kwd和url一对一查询
 	kwd_url.txt,每行关键词和url一对,中间用制表符(直接从excel复制)隔开,url必须加http或者https
 	区分http和https
 	区分http://aaa/bbb/和http://aaa/bbb
 	
-bdpc_rank2.py
+bdpc_rank2.py 排名查询2
 	关键词文件kwd.txt(一行一个)
 	指定待查询域名domain
 	domain不要带https或者http
 	结果保存文件格式：关键词 对应排名的url 及排名值
 	如果一个词某个域名下有2个url出现排名 取第一个
 
-bdpc_xiala.py 
-	获取下拉词 准备kwd.txt  结果不去重
-bdpc_xg.py  
-	获取相关词  准备kwd.txt  结果不去重
-bdpc_real_url.py  
-	获取首页排名的真实url  准备kwd.txt
+bdpc_xiala.py  下拉词采集
+	准备kwd.txt  结果不去重
+bdpc_xg.py   相关搜索采集
+	准备kwd.txt  结果不去重
+bdpc_real_url.py  获取首页排名的真实url
+	 准备kwd.txt
 
 问题：bdpc_monitor.py 运行一般没事 有时候会卡住不动,似乎进程被操作系统杀死了(网速很慢的时候会出现) 具体原因待排查
 其他：老哥们若看得上眼 感觉哪有错再改把 内存、cpu层面的别唠了 毕竟是业余人士.

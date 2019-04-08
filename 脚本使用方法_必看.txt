@@ -1,4 +1,5 @@
 全部是python3
+取得是搜索结果页上的自然排名链接
 
 
 bdpc_monitor.py  百度pc关键词分类分域名监控 

@@ -34,7 +34,9 @@ bdpc_cover2.py  百度pc覆盖率查询2
 
 bdpc_is_index.py 
 收录索引查询；查询url是否收录，若收录则搜索该url的title是否能检索到该url；
-准备url.txt【一行一个url，必须带http或者https，且区分http://xxx和https://xxx】
+准备url.txt【一行一个url，必须带http或者https】
+区分http://和https://
+区分http://aaa/bbb/和http://aaa/bbb
 
 bdpc_xiala.py 
 获取下拉词 准备kwd.txt  结果不去重

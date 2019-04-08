@@ -1,6 +1,8 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-准备url.txt,一行一个url,要加上https或者http
+准备url.txt,一行一个url,必须带http或https
+区分https或者http
+区分https://aaa/bbb和https://aaa/bbb/
 查询某个url是否收录，有收录再访问该url获取title，查询通过搜索title该url是否有排名
 """
 

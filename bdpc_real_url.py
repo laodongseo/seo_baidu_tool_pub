@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # 线程数
     for i in list(range(1)):
         kwd = q.get()
-        url = 'https://www.baidu.com/s?wd={0}'.format(wd)
+        url = 'https://www.baidu.com/s?wd={0}'.format(kwd)
         html = get_html(url)
         encrypt_urls = get_encrpt_urls(html)
         t = threading.Thread(target=get_real_urls,args=(encrypt_urls,))

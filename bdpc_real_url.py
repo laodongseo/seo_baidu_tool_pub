@@ -63,7 +63,7 @@ def get_real_urls(encrypt_url_list):
 
 if __name__ == "__main__":
     # 结果保存文件
-    f = open('real_url.txt','w',encoding='utf-8')
+    f = open('bdpc_real_url.txt','w',encoding='utf-8')
     # 关键词队列
     q = queue.Queue()
     for kwd in open('kwd.txt',encoding='utf-8'):

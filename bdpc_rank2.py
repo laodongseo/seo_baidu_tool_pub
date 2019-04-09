@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-关键词文件kwd.txt(一行一个)
+关键词文件kwd.txt(一行一个) 仅查前十名
 指定待查询域名domain
 domain不要带https或者http
 结果保存文件格式：关键词 对应排名的url 及排名值
@@ -39,7 +39,7 @@ class BdpcRank(threading.Thread):
             html = r.text
             return html
 
-    # 获取某词的serp源码上10条加密url
+    # 获取某词的serp源码上自然排名的所有url
     def get_encrpt_urls(self, html):
         encrypt_url_list = []
         if html and '_百度搜索' in html:

@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-kwd和url一对一查询
+kwd和url一对一查询 仅查前十名
 kwd_url.txt,每行关键词和url一对,中间用制表符(直接从excel复制)隔开,url必须加http或者https
 区分http和https
 区分http://aaa/bbb/和http://aaa/bbb
@@ -38,7 +38,7 @@ class BdpcRank(threading.Thread):
             html = r.text
             return html
 
-    # 获取某词的serp源码上10条加密url
+    # 获取某词的serp源码上自然排名的所有url
     def get_encrpt_urls(self, html):
         encrypt_url_list = []
         if html and '_百度搜索' in html:

@@ -50,7 +50,7 @@ class bdpcMonitor(threading.Thread):
             html = r.text
             return html
 
-    # 获取某词serp源码上10条加密url
+    # 获取某词serp源码上自然排名的所有url
     def get_encrpt_urls(self,html):
         encrypt_url_list = []
         if html and '_百度搜索' in html:

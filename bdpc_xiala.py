@@ -20,19 +20,21 @@ def get_html(url,retry=2):
 
 
 # 提取下拉词
-def get_kwd(html):
+def get_kwd():
     while 1:
+        kwd = q.get()
+        url = 'https://www.baidu.com/sugrec?ie=utf-8&prod=pc&wd={}'.format(kwd)
+        html = get_html(url)
         if html:
-            try:
-                html_new = html.split('[')
+            html_new = html.split('[') if '[' in html else html
+            if (len(html_new)) > 0:
                 kwd_list = re.findall(r'"q":"(.*?)"}', html_new[1], re.S|re.I)
-            except Exception as e:
-                print(e)
             else:
-                for kwd_xiala in kwd_list:
-                    f.write(kwd_xiala+'\n')
+                kwd_list = []
+            for kwd_xiala in kwd_list:
+                print(kwd_xiala)
+                f.write(kwd_xiala+'\n')
         q.task_done()
-
 
 
 if __name__ == "__main__":
@@ -47,11 +49,8 @@ if __name__ == "__main__":
     user_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
     # 设置线程数
-    for i in list(range(1)):
-        kwd = q.get()
-        url = 'https://www.baidu.com/sugrec?ie=utf-8&prod=pc&wd={}'.format(kwd)
-        html = get_html(url)
-        t = threading.Thread(target=get_kwd,args=(html,))
+    for i in list(range(10)):
+        t = threading.Thread(target=get_kwd)
         t.setDaemon(True)
         t.start()
     q.join()

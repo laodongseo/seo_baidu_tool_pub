@@ -118,7 +118,7 @@ class bdpcCover(threading.Thread):
         print(res_sort)
         with open('result2.txt','w',encoding="utf-8") as f:
             for domain,value in res_sort:
-                print(domain,type(domain),type(str(value)))
+                # print(domain,type(domain),type(str(value)))
                 f.write(str(domain)+'\t'+str(value)+'\n')
 
 

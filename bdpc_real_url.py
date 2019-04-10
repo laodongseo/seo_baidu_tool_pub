@@ -60,7 +60,7 @@ def get_real_urls():
             real_url_list = [decrypt_url(encrypt_url) for encrypt_url in encrypt_url_list]
             for url in real_url_list:
                 print(url)
-                f.write(url+'\n')
+                f.write(str(url)+'\n')
         else:
             print('未提取到serp上的加密url')
         q.task_done()

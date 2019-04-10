@@ -50,8 +50,12 @@ def decrypt_url(encrypt_url, retry=1):
 
 
 # 获取某词serp源码首页排名真实url
-def get_real_urls(encrypt_url_list):
+def get_real_urls():
     while 1:
+        kwd = q.get()
+        url = 'https://www.baidu.com/s?wd={0}'.format(kwd)
+        html = get_html(url)
+        encrypt_url_list = get_encrpt_urls(html)
         if encrypt_url_list:
             real_url_list = [decrypt_url(encrypt_url) for encrypt_url in encrypt_url_list]
             for url in real_url_list:
@@ -64,21 +68,17 @@ def get_real_urls(encrypt_url_list):
 if __name__ == "__main__":
     # 结果保存文件
     f = open('bdpc_real_url.txt','w',encoding='utf-8')
+    # UA设置
+    user_agent = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
     # 关键词队列
     q = queue.Queue()
     for kwd in open('kwd.txt',encoding='utf-8'):
         kwd = kwd.strip()
         q.put(kwd)
-    # UA设置
-    user_agent = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
     # 线程数
-    for i in list(range(1)):
-        kwd = q.get()
-        url = 'https://www.baidu.com/s?wd={0}'.format(kwd)
-        html = get_html(url)
-        encrypt_urls = get_encrpt_urls(html)
-        t = threading.Thread(target=get_real_urls,args=(encrypt_urls,))
+    for i in list(range(5)):
+        t = threading.Thread(target=get_real_urls)
         t.setDaemon(True)
         t.start()
     q.join()

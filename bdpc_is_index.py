@@ -4,6 +4,7 @@
 区分https或者http
 区分https://aaa/bbb和https://aaa/bbb/
 查询某个url是否收录，有收录再访问该url获取title(模拟百度蜘蛛UA获取title)，查询通过搜索title该url是否有排名
+可能的坑：因为是访问url获取title，如果短时间查询同一个域名下多条url，可能被封造成获取title错误影响最终结果。
 """
 
 import requests

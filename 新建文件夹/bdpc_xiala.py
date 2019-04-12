@@ -1,9 +1,10 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 # python3.7版本
 import requests
+import re
 import threading
 import queue
-from pyquery import PyQuery as pq
+
 
 # 获取某词下拉地址源码
 def get_html(url,retry=2):
@@ -18,30 +19,27 @@ def get_html(url,retry=2):
         return html
 
 
-# 提取相关词
-def get_xgkwds():
+# 提取下拉词
+def get_kwd():
     while 1:
         kwd = q.get()
-        url = 'https://www.baidu.com/s?ie=utf-8&wd={}'.format(kwd)
+        url = 'https://www.baidu.com/sugrec?ie=utf-8&prod=pc&wd={}'.format(kwd)
         html = get_html(url)
-        if html and '_百度搜索' in html:
-            doc = pq(html)
-            try:
-                xg_kwds = doc('#rs table tr th a').items()
-                # print(xg_kwds)
-            except Exception as e:
-                print(e)
+        if html:
+            html_new = html.split('[') if '[' in html else html
+            if (len(html_new)) > 0:
+                kwd_list = re.findall(r'"q":"(.*?)"}', html_new[1], re.S|re.I)
             else:
-                for kwd_xg in xg_kwds:
-                    kwd_xg = kwd_xg.text()
-                    print(kwd_xg)
-                    f.write(kwd_xg+'\n')
+                kwd_list = []
+            for kwd_xiala in kwd_list:
+                print(kwd_xiala)
+                f.write(kwd_xiala+'\n')
         q.task_done()
 
 
 if __name__ == "__main__":
     # 结果保存文件
-    f = open('bdpc_xg.txt','w',encoding='utf-8')
+    f = open('bdpc_xiala.txt','w',encoding='utf-8')
     # 关键词队列
     q = queue.Queue()
     for kwd in open('kwd.txt',encoding='utf-8'):
@@ -51,8 +49,8 @@ if __name__ == "__main__":
     user_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
     # 设置线程数
-    for i in list(range(5)):
-        t = threading.Thread(target=get_xgkwds)
+    for i in list(range(10)):
+        t = threading.Thread(target=get_kwd)
         t.setDaemon(True)
         t.start()
     q.join()

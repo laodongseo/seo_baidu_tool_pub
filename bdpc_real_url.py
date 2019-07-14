@@ -5,7 +5,6 @@ import threading
 import queue
 from pyquery import PyQuery as pq
 
-
 # 获取某词serp源码
 def get_html(url,retry=2):
     try:
@@ -53,17 +52,22 @@ def decrypt_url(encrypt_url, retry=1):
 def get_real_urls():
     while 1:
         kwd = q.get()
-        url = 'https://www.baidu.com/s?wd={0}'.format(kwd)
-        html = get_html(url)
-        encrypt_url_list = get_encrpt_urls(html)
-        if encrypt_url_list:
-            real_url_list = [decrypt_url(encrypt_url) for encrypt_url in encrypt_url_list]
-            for url in real_url_list:
-                print(url)
-                f.write(str(url)+'\n')
-        else:
-            print('未提取到serp上的加密url')
-        q.task_done()
+        try:
+            url = 'https://www.baidu.com/s?wd={0}'.format(kwd)
+            html = get_html(url)
+            encrypt_url_list = get_encrpt_urls(html)
+            if encrypt_url_list:
+                real_url_list = [decrypt_url(encrypt_url) for encrypt_url in encrypt_url_list]
+                for url in real_url_list:
+                    print(url)
+                    f.write(str(url)+'\n')
+            else:
+                print('未提取到serp上的加密url')
+            del kwd
+        except Exception as e:
+            print(e)
+        finally:
+            q.task_done()
 
 if __name__ == "__main__":
     # 结果保存文件

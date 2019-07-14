@@ -74,7 +74,7 @@ class BdmoRank(threading.Thread):
         while 1:
             kwd = q.get()
             try:
-                url = "https://m.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
+                url = "https://m.baidu.com/s?ie=utf-8&word={0}".format(kwd)
                 html = self.get_html(url)
                 data_logs = self.get_data_logs(html)
                 rank_url,rank = self.check_include(data_logs)

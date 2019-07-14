@@ -10,6 +10,7 @@ import requests
 from pyquery import PyQuery as pq
 import threading
 import queue
+import gc
 
 
 class BdpcRank(threading.Thread):
@@ -89,17 +90,23 @@ class BdpcRank(threading.Thread):
     def run(self):
         while 1:
             kwd_url = q.get()
-            kwd = kwd_url[0]
-            url_check = kwd_url[1]
-            url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
-            html = self.get_html(url)
-            encrypt_url_list = self.get_encrpt_urls(html)
-            real_urls = self.get_real_urls(encrypt_url_list)
-            rank = self.check_include(url_check, real_urls)
-            print(kwd,url_check,rank)
-            f.write(kwd+'\t'+url_check+'\t'+str(rank)+'\n')
-
-            q.task_done()
+            print(kwd_url)
+            try:
+                kwd = kwd_url[0]
+                url_check = kwd_url[1]
+                url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
+                html = self.get_html(url)
+                encrypt_url_list = self.get_encrpt_urls(html)
+                real_urls = self.get_real_urls(encrypt_url_list)
+                rank = self.check_include(url_check, real_urls)
+                print(kwd,url_check,rank)
+                f.write(kwd+'\t'+url_check+'\t'+str(rank)+'\n')
+                del kwd_url
+                gc.collect()
+            except Exception as e:
+                print(e)
+            finally:
+                q.task_done()
 
 
 if __name__ == "__main__":

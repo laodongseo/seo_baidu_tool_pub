@@ -85,20 +85,24 @@ class BdpcShoulu(threading.Thread):
     def run(self):
         while 1:
             target_url = q.get()
-            # 查询该target_url是否收录
-            url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(target_url)
-            html = self.get_html(url)
-            encrypt_url_list = self.get_encrpt_urls(html)
-            real_urls = self.get_real_urls(encrypt_url_list)
-            num = self.check_include(target_url, real_urls)
-            if num == 1:
-                print(target_url,"收录")
-                f.write(target_url+'\t'+'收录\n')
-            elif num == 0:
-                print(target_url,"未收录")
-                f.write(target_url + '\t' + '未收录\n')
-
-            q.task_done()
+            try:
+                # 查询该target_url是否收录
+                url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(target_url)
+                html = self.get_html(url)
+                encrypt_url_list = self.get_encrpt_urls(html)
+                real_urls = self.get_real_urls(encrypt_url_list)
+                num = self.check_include(target_url, real_urls)
+                if num == 1:
+                    print(target_url,"收录")
+                    f.write(target_url+'\t'+'收录\n')
+                elif num == 0:
+                    print(target_url,"未收录")
+                    f.write(target_url + '\t' + '未收录\n')
+                del target_url
+            except Exception as e:
+                print(e)
+            finally:
+                q.task_done()
 
 
 if __name__ == "__main__":

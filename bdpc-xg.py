@@ -22,21 +22,24 @@ def get_html(url,retry=2):
 def get_xgkwds():
     while 1:
         kwd = q.get()
-        url = 'https://www.baidu.com/s?ie=utf-8&wd={}'.format(kwd)
-        html = get_html(url)
-        if html and '_百度搜索' in html:
-            doc = pq(html)
-            try:
-                xg_kwds = doc('#rs table tr th a').items()
-                # print(xg_kwds)
-            except Exception as e:
-                print(e)
-            else:
-                for kwd_xg in xg_kwds:
-                    kwd_xg = kwd_xg.text()
-                    print(kwd_xg)
-                    f.write(kwd_xg+'\n')
-        q.task_done()
+        try:
+            url = 'https://www.baidu.com/s?ie=utf-8&wd={}'.format(kwd)
+            html = get_html(url)
+            if html and '_百度搜索' in html:
+                doc = pq(html)
+                try:
+                    xg_kwds = doc('#rs table tr th a').items()
+                    # print(xg_kwds)
+                except Exception as e:
+                    print(e)
+                else:
+                    for kwd_xg in xg_kwds:
+                        kwd_xg = kwd_xg.text()
+                        print(kwd_xg)
+                        f.write(kwd_xg+'\n')
+            del kwd
+        finally:
+            q.task_done()
 
 
 if __name__ == "__main__":

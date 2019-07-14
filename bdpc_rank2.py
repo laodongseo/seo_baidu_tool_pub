@@ -11,6 +11,7 @@ import requests
 from pyquery import PyQuery as pq
 import threading
 import queue
+import gc
 
 
 class BdpcRank(threading.Thread):
@@ -92,19 +93,25 @@ class BdpcRank(threading.Thread):
     def run(self):
         while 1:
             kwd = q.get()
-            url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
-            html = self.get_html(url)
-            encrypt_url_list = self.get_encrpt_urls(html)
-            real_urls = self.get_real_urls(encrypt_url_list)
-            result,rank = self.check_include(doamin,real_urls)
-            print(kwd,result,rank)
-            f.write(kwd+'\t'+result+'\t'+str(rank)+'\n')
-            q.task_done()
+            try:
+                url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
+                html = self.get_html(url)
+                encrypt_url_list = self.get_encrpt_urls(html)
+                real_urls = self.get_real_urls(encrypt_url_list)
+                result,rank = self.check_include(doamin,real_urls)
+                print(kwd,result,rank)
+                f.write(kwd+'\t'+result+'\t'+str(rank)+'\n')
+                del kwd
+                gc.collect()
+            except Exception as e:
+                print(e)
+            finally:
+                q.task_done()
 
 
 if __name__ == "__main__":
 
-    doamin = 'www.58guakao.com'
+    doamin = 'www.renrenche.com'
     user_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
     q = BdpcRank.read_txt('kwd.txt')

@@ -90,7 +90,6 @@ class BdpcRank(threading.Thread):
     def run(self):
         while 1:
             kwd_url = q.get()
-            print(kwd_url)
             try:
                 kwd = kwd_url[0]
                 url_check = kwd_url[1]

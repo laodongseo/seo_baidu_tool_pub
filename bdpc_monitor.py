@@ -1,13 +1,14 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 # 事先准备excel文件，每个sheet存储一类关键词，sheet名字即关键词分类
 
-from openpyxl import Workbook
 from openpyxl import load_workbook
 import requests
 from pyquery import PyQuery as pq
 import threading
 import queue
 import time
+import gc
+
 
 class bdpcMonitor(threading.Thread):
 
@@ -91,36 +92,40 @@ class bdpcMonitor(threading.Thread):
         global success_num
         while 1:
             kwd_dict = q.get()
-            # print(kwd_dict)
-            for kwd,group in kwd_dict.items():
-                url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
-                html = self.get_html(url)
-                encrypt_url_list = self.get_encrpt_urls(html)
-                real_urls = self.get_real_urls(encrypt_url_list)
-                if real_urls:
-                    # 可能有解密失败返回None的情况 干掉None 防止列表转字符串出错
-                    set_real_urls = set(real_urls)
-                    real_urls = [i for i in set_real_urls]
-                    real_urls.remove(None) if None in real_urls else real_urls
-                    # 将某词的serp上10条真实url合并为一个字符串
-                    domain_str = ''.join(real_urls)
-                    try:
-                        threadLock.acquire()
-                        success_num += 1
-                        for domain in target_domain:
-                            if domain in domain_str:
-                                result[domain][group] += 1
-                        print('查询成功{0}个'.format(success_num))
-                    except Exception as e:
-                        print(e)
-                    finally:
-                        print (kwd)
-                        threadLock.release()
-            q.task_done()
+            try:
+                for kwd,group in kwd_dict.items():
+                    url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
+                    html = self.get_html(url)
+                    encrypt_url_list = self.get_encrpt_urls(html)
+                    real_urls = self.get_real_urls(encrypt_url_list)
+                    if real_urls:
+                        # 可能有解密失败返回None的情况 干掉None 防止列表转字符串出错
+                        set_real_urls = set(real_urls)
+                        real_urls = [i for i in set_real_urls]
+                        real_urls.remove(None) if None in real_urls else real_urls
+                        # 将某词的serp上10条真实url合并为一个字符串
+                        domain_str = ''.join(real_urls)
+                        try:
+                            threadLock.acquire()
+                            success_num += 1
+                            for domain in target_domain:
+                                if domain in domain_str:
+                                    result[domain][group] += 1
+                            print('查询成功{0}个'.format(success_num))
+                        finally:
+                            threadLock.release()
+                    del kwd
+                    del group
+                    gc.collect()
+            except Exception as e:
+                print(e)
+            finally:
+                q.task_done()
 
     # 保存数据
     @staticmethod
     def save():
+        print(result)
         print ('开始save.....')
         with open('result.txt','w',encoding="utf-8") as f:
             for domain,data_dict in result.items():
@@ -141,14 +146,14 @@ if __name__ == "__main__":
     threadLock = threading.Lock()  # 锁
     result = {}   # 结果保存字典
     success_num = 0  # 查询成功个数
-    date = time.strftime("%Y-%m-%d", time.localtime()) # 询日期
+    date = time.strftime("%Y-%m-%d", time.localtime()) # 查询日期
 
     q,group_list = bdpcMonitor.read_excel('kwd.xlsx')
     bdpcMonitor.result_init(group_list)
     all_num = q.qsize()
 
     # 设置线程数
-    for i in list(range(2)):
+    for i in list(range(6)):
         t = bdpcMonitor()
         t.setDaemon(True)
         t.start()
@@ -157,4 +162,3 @@ if __name__ == "__main__":
     bdpcMonitor.save()
     end = time.time()
     print('\n关键词共{0}个,查询成功{1}个,耗时{2}min'.format(all_num,success_num,(end-start)/60) )
-    print('结果为\n', result)

@@ -51,7 +51,7 @@ class BdmoReal(threading.Thread):
                     data_logs.append(data_log) if data_log is not None else data_logs
         return data_logs
 
-    # 检查链接是否首页有排名
+    # 获取排名真实url
     def get_real_urls(self,data_logs=[]):
         real_urls = []
         for data_log in data_logs:

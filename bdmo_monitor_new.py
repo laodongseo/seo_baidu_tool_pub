@@ -1,8 +1,5 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-提取的是自然排名url
-不含百家号 百度知道 百度贴吧 不含xxx-视频(https://www.baidu.com/sf/vsearch?xxx) 但是含有百科
-百家号 百度知道 百度贴吧 类名是c-container  xxx-视频是百度自己的页面
 事先准备excel文件，每个sheet存储一类关键词，sheet名字即关键词分类
 """
 

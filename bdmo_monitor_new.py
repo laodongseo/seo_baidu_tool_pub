@@ -88,7 +88,7 @@ class bdmoMonitor(threading.Thread):
         while 1:
             kwd_dict = q.get()
             for kwd,group in kwd_dict.items():
-                url = "https://m.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
+                url = "https://m.baidu.com/s?ie=utf-8&word={0}".format(kwd)
                 html = self.get_html(url)
                 data_logs = self.get_data_logs(html)
                 real_urls = self.get_real_urls(data_logs)

@@ -23,18 +23,23 @@ def get_html(url,retry=2):
 def get_kwd():
     while 1:
         kwd = q.get()
-        url = 'https://www.baidu.com/sugrec?ie=utf-8&prod=pc&wd={}'.format(kwd)
-        html = get_html(url)
-        if html:
-            html_new = html.split('[') if '[' in html else html
-            if (len(html_new)) > 0:
-                kwd_list = re.findall(r'"q":"(.*?)"}', html_new[1], re.S|re.I)
-            else:
-                kwd_list = []
-            for kwd_xiala in kwd_list:
-                print(kwd_xiala)
-                f.write(kwd_xiala+'\n')
-        q.task_done()
+        try:
+            url = 'https://www.baidu.com/sugrec?ie=utf-8&prod=pc&wd={}'.format(kwd)
+            html = get_html(url)
+            if html:
+                html_new = html.split('[') if '[' in html else html
+                if (len(html_new)) > 0:
+                    kwd_list = re.findall(r'"q":"(.*?)"}', html_new[1], re.S|re.I)
+                else:
+                    kwd_list = []
+                for kwd_xiala in kwd_list:
+                    print(kwd_xiala)
+                    f.write(kwd_xiala+'\n')
+            del kwd
+        except Exception as e:
+            print(e)
+        finally:
+            q.task_done()
 
 
 if __name__ == "__main__":

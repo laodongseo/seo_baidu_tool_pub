@@ -8,6 +8,7 @@ import threading
 import queue
 import time
 from urllib.parse import urlparse
+import gc
 
 class bdpcCover(threading.Thread):
 
@@ -82,7 +83,6 @@ class bdpcCover(threading.Thread):
     # 获取某词serp源码首页排名真实url的域名部分
     def get_domains(self,real_url_list):
             domain_list = [self.get_domain(real_url) for real_url in real_url_list]
-            # 搜一个词 同一个域名多个url出现排名 只计算一次
             return domain_list
 
     # 线程函数
@@ -90,31 +90,35 @@ class bdpcCover(threading.Thread):
         global success_num
         while 1:
             kwd = q.get()
-            url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
-            html = self.get_html(url)
-            encrypt_url_list = self.get_encrpt_urls(html)
-            real_url_list = self.get_real_urls(encrypt_url_list)
-            domain_list = self.get_domains(real_url_list)
-            if domain_list:
-                try:
-                    threadLock.acquire()
-                    for domain in domain_list:
-                        result[domain] = result[domain]+1 if domain in result else 1
-                    success_num += 1
-                    print('查询成功{0}个'.format(success_num))
-                except Exception as e:
-                    print(e)
-                finally:
-                    print (kwd,'查询结束')
-                    threadLock.release()
-            q.task_done()
+            try:
+                url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
+                html = self.get_html(url)
+                encrypt_url_list = self.get_encrpt_urls(html)
+                real_url_list = self.get_real_urls(encrypt_url_list)
+                domain_list = self.get_domains(real_url_list)
+                if domain_list:
+                    try:
+                        threadLock.acquire()
+                        for domain in domain_list:
+                            result[domain] = result[domain]+1 if domain in result else 1
+                        success_num += 1
+                        print('查询成功{0}个'.format(success_num))
+                    finally:
+                        threadLock.release()
+                del kwd
+                gc.collect()
+            except Exception as e:
+                print(e)
+            finally:
+                q.task_done()
 
     # 保存数据
     @staticmethod
     def save():
         print ('开始save.....')
         res_sort = sorted(result.items(), key=lambda s: s[1], reverse=True)
-        with open('result1.txt','w',encoding="utf-8") as f:
+        print(res_sort)
+        with open('bdpc_result1.txt','w',encoding="utf-8") as f:
             for domain,value in res_sort:
                     f.write(str(domain)+'\t'+str(value)+'\n')
 
@@ -141,4 +145,3 @@ if __name__ == "__main__":
     bdpcCover.save()
     end = time.time()
     print('\n关键词共{0}个,查询成功{1}个,耗时{2}min'.format(all_num,success_num,(end-start)/60) )
-    print('结果为\n', result)

@@ -91,24 +91,25 @@ class bdpcCover(threading.Thread):
         global success_num
         while 1:
             kwd = q.get()
-            url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
-            html = self.get_html(url)
-            encrypt_url_list = self.get_encrpt_urls(html)
-            real_url_list = self.get_real_urls(encrypt_url_list)
-            domain_set = self.get_domains(real_url_list)
-            if domain_set:
-                try:
-                    threadLock.acquire()
-                    for domain in domain_set:
-                        result[domain] = result[domain]+1 if domain in result else 1
-                    success_num += 1
-                    print('查询成功{0}个'.format(success_num))
-                except Exception as e:
-                    print(e)
-                finally:
-                    print (kwd,'查询结束')
-                    threadLock.release()
-            q.task_done()
+            try:
+                url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
+                html = self.get_html(url)
+                encrypt_url_list = self.get_encrpt_urls(html)
+                real_url_list = self.get_real_urls(encrypt_url_list)
+                domain_set = self.get_domains(real_url_list)
+                if domain_set:
+                    try:
+                        threadLock.acquire()
+                        for domain in domain_set:
+                            result[domain] = result[domain]+1 if domain in result else 1
+                        success_num += 1
+                        print('查询成功{0}个'.format(success_num))
+                    finally:
+                        threadLock.release()
+            except Exception as e:
+                print(e)
+            finally:
+                q.task_done()
 
     # 保存数据
     @staticmethod
@@ -116,7 +117,7 @@ class bdpcCover(threading.Thread):
         print ('开始save.....')
         res_sort = sorted(result.items(), key=lambda s: s[1], reverse=True)
         print(res_sort)
-        with open('result2.txt','w',encoding="utf-8") as f:
+        with open('bdpc_result2.txt','w',encoding="utf-8") as f:
             for domain,value in res_sort:
                 # print(domain,type(domain),type(str(value)))
                 f.write(str(domain)+'\t'+str(value)+'\n')

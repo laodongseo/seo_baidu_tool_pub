@@ -19,7 +19,7 @@ class BdpcRank(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
 
-    # 读取txt文件 获取待查询url
+    # 读取txt文件 获取待查询kwd
     @staticmethod
     def read_txt(filepath):
         q = queue.Queue()

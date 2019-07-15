@@ -94,35 +94,40 @@ class BdpcIndex(threading.Thread):
     def run(self):
         while 1:
             target_url = q.get()
-            # 查询该target_url是否收录
-            url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(target_url)
-            html = self.get_html(url,user_agent)
-            encrypt_url_list = self.get_encrpt_urls(html)
-            real_urls = self.get_real_urls(encrypt_url_list)
-            num_target_url = self.check_include(target_url, real_urls)
-            # 有收录则判断是否索引
-            if num_target_url == 1:
-                # 查询该target_url的title 检查是否有索引
-                title = self.get_title(target_url, baidu_ua)
-                if title:
-                    url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(title)
-                    html = self.get_html(url, user_agent)
-                    encrypt_url_list = self.get_encrpt_urls(html)
-                    real_urls = self.get_real_urls(encrypt_url_list)
-                    num_title = self.check_include(target_url, real_urls)
-                    if num_title == 1:
-                        print(target_url, "收录且索引")
-                        f.write(target_url+'\t'+'收录且索引\n')
-                    elif num_title == 0:
-                        print(target_url, "收录无索引")
-                        f.write(target_url + '\t' + '收录无索引\n')
-                else:
-                    print(target_url, '未获取title')
-                    f.write(target_url + '\t' + '未获取title\n')
-            elif num_target_url == 0:
-                print(target_url, "无收录")
-                f.write(target_url + '\t' + '无收录\n')
-            q.task_done()
+            try:
+                # 查询该target_url是否收录
+                url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(target_url)
+                html = self.get_html(url,user_agent)
+                encrypt_url_list = self.get_encrpt_urls(html)
+                real_urls = self.get_real_urls(encrypt_url_list)
+                num_target_url = self.check_include(target_url, real_urls)
+                # 有收录则判断是否索引
+                if num_target_url == 1:
+                    # 查询该target_url的title 检查是否有索引
+                    title = self.get_title(target_url, baidu_ua)
+                    if title:
+                        url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(title)
+                        html = self.get_html(url, user_agent)
+                        encrypt_url_list = self.get_encrpt_urls(html)
+                        real_urls = self.get_real_urls(encrypt_url_list)
+                        num_title = self.check_include(target_url, real_urls)
+                        if num_title == 1:
+                            print(target_url, "收录且索引")
+                            f.write(target_url+'\t'+'收录且索引\n')
+                        elif num_title == 0:
+                            print(target_url, "收录无索引")
+                            f.write(target_url + '\t' + '收录无索引\n')
+                    else:
+                        print(target_url, '未获取title')
+                        f.write(target_url + '\t' + '未获取title\n')
+                elif num_target_url == 0:
+                    print(target_url, "无收录")
+                    f.write(target_url + '\t' + '无收录\n')
+                del target_url
+            except Exception as e:
+                print(e)
+            finally:
+                q.task_done()
 
 
 if __name__ == "__main__":

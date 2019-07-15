@@ -77,8 +77,8 @@ class BdmoRank(threading.Thread):
                 html = self.get_html(url)
                 data_logs = self.get_data_logs(html)
                 url,rank = self.check_include(url_check,data_logs)
-                print(url,rank)
-                f.write(url + '\t' + str(rank) + '\n')
+                print(kwd,url,rank)
+                f.write(kwd + url + '\t' + str(rank) + '\n')
                 del kwd
                 del url_check
                 gc.collect()

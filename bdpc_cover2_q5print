@@ -10,6 +10,7 @@ import queue
 import time
 from urllib.parse import urlparse
 from openpyxl import load_workbook
+from openpyxl import Workbook
 
 
 class bdpcCover(threading.Thread):
@@ -37,7 +38,6 @@ class bdpcCover(threading.Thread):
         result = {}
         for group in group_list:
             result[group] = {}
-        page_list = ['首页','二页','三页','四页','五页']
         for group in group_list:
             for page in page_list:
                 result[group][page] = 0
@@ -145,39 +145,68 @@ class bdpcCover(threading.Thread):
 
 
 if __name__ == "__main__":
-    start = time.time()
+    start = time.time() 
+    local_time = time.localtime()
+    today = time.strftime('%Y/%m/%d',local_time)
     domain = '5i5j.com'
     user_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 SE 2.X MetaSr 1.0'}
     threadLock = threading.Lock()  # 锁
     success_num = 0  # 查询成功个数
-    q,group_list = bdpcCover.read_excel('kwd_core.xlsx')
-    result = bdpcCover.result_init(group_list)
+    page_list = ['首页','二页','三页','四页','五页'] #查询页码 全局变量
+    q,group_list = bdpcCover.read_excel('kwd_core.xlsx') #关键词队列及属性
+    result = bdpcCover.result_init(group_list) #结果字典
     all_num = q.qsize() # 总词数
-    page_dict = {'':'首页',10:'二页',20:'三页',30:'四页',40:'五页'}
-    f = open('bdpc_page5_print.txt','w',encoding="utf-8")
+    page_dict = {'':'首页',10:'二页',20:'三页',30:'四页',40:'五页'} #查询页数
+    f = open('bdpc1_page5_info.txt','w',encoding="utf-8")
     # 设置线程数
-    for i in list(range(10)):
+    for i in list(range(7)):
         t = bdpcCover()
         t.setDaemon(True)
         t.start()
     q.join()
     f.close()
 
-    # 读取文件 计算首页 前五页词数
-    for line in open('bdpc_page5_print.txt','r',encoding='utf-8'):
+    # 读取文件 计算首页到五页每页的词数
+    for line in open('bdpc1_page5_info.txt','r',encoding='utf-8'):
         line = line.strip().split('\t')
         page = line[1]
         group = line[2]
-        page = '五页' if group in ['二页','三页','四页','五页'] else page
         result[group][page] += 1
-        print(result)
 
+    # 计算首页、前二页、前三页、前四页、前五页词数
+    for group,page_num in result.items():
+        for page,num in page_num.items():
+            if page in ['首页','二页','三页','四页']:
+                result[group]['五页'] += num
+        for page, num in page_num.items():
+            if page in ['首页','二页','三页']:
+                result[group]['四页'] += num
+        for page, num in page_num.items():
+            if page in ['首页','二页',]:
+                result[group]['三页'] += num
+        for page, num in page_num.items():
+            if page in ['首页',]:
+                result[group]['二页'] += num
+    # 写入txt文件
     with open('bdpc_page5.txt', 'w', encoding="utf-8") as f:
         for group,data_dict in result.items():
             for page,value in data_dict.items():
                 f.write(group + '\t' + page + '\t' + str(value) + '\n')
-
+    #写入excel文件
+    wb = Workbook()
+    for group in group_list:
+        sheet_num = 0
+        wb.create_sheet(u'{0}'.format(group),index=sheet_num)
+        sheet_num += 1
+    page_list.insert(0,'日期')
+    for group,data_dict in result.items():
+            wb[group].append(page_list)
+            row_value = [today]
+            for page,value in data_dict.items():
+                row_value.append(value)
+            wb[u'{0}'.format(group)].append(row_value)
+            wb[u'{0}'.format(group)].cell(row=1,column=1,value="")
+    wb.save('bdpc_page5.xlsx')
     end = time.time()
     print('\n关键词共{0}个,查询成功{1}个,耗时{2}min'.format(all_num, success_num, (end - start) / 60))
-

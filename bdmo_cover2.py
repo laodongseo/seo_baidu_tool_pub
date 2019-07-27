@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-一个关键词serp上同一个域名出现N个url排名 计算N次
+一个关键词serp上同一个域名出现N个url排名 计算1次
 准备kwd.txt
 """
 import requests

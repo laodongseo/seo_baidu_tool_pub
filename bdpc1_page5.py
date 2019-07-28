@@ -182,7 +182,7 @@ if __name__ == "__main__":
     for group,page_num in result.items():
         for page,num in page_num.items():
             if page in ['五页后']:
-                result[group]['五页后'] += num
+                result[group]['五页后'] = num
         for page,num in page_num.items():
             if page in ['首页','二页','三页','四页']:
                 result[group]['五页'] += num

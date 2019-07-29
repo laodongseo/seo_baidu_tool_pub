@@ -1,7 +1,8 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
 一个关键词serp上同一个域名出现N个url排名 计算1次
-查询前五页的数量,前五页有排名的全部记录,无排名的不记录
+查询前五页的数量,前五页有排名的全部记录
+生成的excel和txt是首页 前二/三/四/五/五页后的数量
 """
 import requests
 from pyquery import PyQuery as pq

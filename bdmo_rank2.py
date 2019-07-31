@@ -5,6 +5,7 @@
 domain不要带https或者http
 结果保存文件格式：关键词 对应排名的url 及排名值
 如果一个词某个域名下有2个url出现排名 取第一个
+源码页面 搜索信息聚合div是 class="result c-result" 未提取
 """
 
 import requests

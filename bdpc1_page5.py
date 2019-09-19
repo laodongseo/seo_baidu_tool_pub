@@ -3,6 +3,7 @@
 一个关键词serp上同一个域名出现N个url排名 计算1次
 查询前五页的数量,前五页有排名的全部记录
 生成的excel和txt是首页 前二/三/四/五/五页后的数量
+查询任务的数量应该和xxx_info.txt行数相同，否则可能就是有几个词查询失败
 """
 import requests
 from pyquery import PyQuery as pq
@@ -12,7 +13,8 @@ import time
 from urllib.parse import urlparse
 from openpyxl import load_workbook
 from openpyxl import Workbook
-
+import time
+import gc
 
 class bdpcCover(threading.Thread):
 
@@ -53,6 +55,7 @@ class bdpcCover(threading.Thread):
             r = requests.get(url=url,headers=user_agent,timeout=5)
         except Exception as e:
             print('获取源码失败',e)
+            time.sleep(1)
             if retry > 0:
                 self.get_html(url,retry-1)
         else:
@@ -67,18 +70,21 @@ class bdpcCover(threading.Thread):
             try:
                 a_list = doc('.t a').items()
             except Exception as e:
-                print('未提取到serp上的解密url', e, url)
+                print('未提取到serp上的解密url', e)
             else:
                 for a in a_list:
                     encrypt_url = a.attr('href')
                     if encrypt_url.find('http://www.baidu.com/link?url=') == 0:
                         encrypt_url_list.append(encrypt_url)
+        else:
+            print('结果页有问题,可能被反爬')
         return encrypt_url_list
 
     # 解密某条加密url
     def decrypt_url(self,encrypt_url,retry=1):
         try:
             encrypt_url = encrypt_url.replace('http://','https://')
+            # print(encrypt_url)
             r = requests.head(encrypt_url,headers=user_agent)
         except Exception as e:
             print(encrypt_url,'解密失败',e)
@@ -132,10 +138,14 @@ class bdpcCover(threading.Thread):
                     if domain_str and domain in domain_str:
                         page = '首页' if page == '' else page_dict[page]
                         f.write('{0}\t{1}\t{2}\n'.format(kwd,page,group))
+                        for real_url in real_url_list:
+                            if domain in real_url:
+                                f_url.write('{0}\t{1}\t{2}\t{3}\n'.format(kwd,page,group,real_url))
                         break
                     if page == 40 and domain not in domain_str:
                         f.write('{0}\t{1}\t{2}\n'.format(kwd,'五页后',group))
                 f.flush()
+                f_url.flush()
                 threadLock.acquire()
                 success_num += 1
                 threadLock.release()
@@ -145,34 +155,37 @@ class bdpcCover(threading.Thread):
             finally:
                 del kwd
                 del group
+                gc.collect()
                 q.task_done()
 
 
 if __name__ == "__main__":
     start = time.time() 
     local_time = time.localtime()
-    today = time.strftime('%Y/%m/%d',local_time)
+    today = time.strftime('%Y%m%d',local_time)
     domain = '5i5j.com'
     user_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 SE 2.X MetaSr 1.0'}
     threadLock = threading.Lock()  # 锁
     success_num = 0  # 查询成功个数
     page_list = ['首页','二页','三页','四页','五页','五页后'] #查询页码 全局变量
-    q,group_list = bdpcCover.read_excel('kwd_core.xlsx') #关键词队列及属性
+    q,group_list = bdpcCover.read_excel('./kwd_core_city.xlsx') #关键词队列及属性
     result = bdpcCover.result_init(group_list) #结果字典
     all_num = q.qsize() # 总词数
     page_dict = {'':'首页',10:'二页',20:'三页',30:'四页',40:'五页'} #查询页数
-    f = open('bdpc1_page5_info.txt','w',encoding="utf-8")
+    f = open('{0}bdpc1_page5_info.txt'.format(today),'w',encoding="utf-8")
+    f_url = open('{0}bdpc1_page5_rankurl.txt'.format(today),'w',encoding="utf-8")
     # 设置线程数
-    for i in list(range(8)):
+    for i in list(range(3)):
         t = bdpcCover()
         t.setDaemon(True)
         t.start()
     q.join()
     f.close()
+    f_url.close()
 
     # 读取文件 计算首页到五页【每页】的词数
-    for line in open('bdpc1_page5_info.txt','r',encoding='utf-8'):
+    for line in open('{0}bdpc1_page5_info.txt'.format(today),'r',encoding='utf-8'):
         line = line.strip().split('\t')
         page = line[1]
         group = line[2]
@@ -198,7 +211,7 @@ if __name__ == "__main__":
                 result[group]['二页'] += num
 
     # 写入txt文件
-    with open('bdpc1_page5.txt', 'w', encoding="utf-8") as f:
+    with open('{0}bdpc1_page5.txt'.format(today), 'w', encoding="utf-8") as f:
         for group,data_dict in result.items():
             for page,value in data_dict.items():
                 f.write(group + '\t' + page + '\t' + str(value) + '\n')
@@ -222,6 +235,6 @@ if __name__ == "__main__":
             wb[u'{0}'.format(group)].append(row_value)
             # 干掉日期单元格的数据
             wb[u'{0}'.format(group)].cell(row=1,column=1,value="")
-    wb.save('bdpc1_page5.xlsx')
+    wb.save('{0}bdpc1_page5.xlsx'.format(today))
     end = time.time()
-    print('\n关键词共{0}个,查询成功{1}个,耗时{2}min'.format(all_num, success_num, (end - start) / 60))
+    print('\n关键词共{0}个,查询任务{1}个,耗时{2}min'.format(all_num, success_num, (end - start) / 60))

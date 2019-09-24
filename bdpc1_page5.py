@@ -1,9 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-一个关键词serp上同一个域名出现N个url排名 计算1次
-查询前五页的数量,前五页有排名的全部记录
+bdpc1_page5_info.txt记录每个kwd在第几页有排名
+bdpc1_page5_rankurl.txt记录每个kwd前五页排名的url，当前页面出现多个就记录多个
 生成的excel和txt是首页 前二/三/四/五/五页后的数量
-查询任务的数量应该和xxx_info.txt行数相同，否则可能就是有几个词查询失败
+bdpc1_page5_info.txt的行数就是真正查询成功的词数
 """
 import requests
 from pyquery import PyQuery as pq
@@ -16,7 +16,7 @@ from openpyxl import Workbook
 import time
 import gc
 
-class bdpcCover(threading.Thread):
+class bdpcCoverPage5(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -169,15 +169,15 @@ if __name__ == "__main__":
     threadLock = threading.Lock()  # 锁
     success_num = 0  # 查询成功个数
     page_list = ['首页','二页','三页','四页','五页','五页后'] #查询页码 全局变量
-    q,group_list = bdpcCover.read_excel('./kwd_core_city.xlsx') #关键词队列及属性
-    result = bdpcCover.result_init(group_list) #结果字典
+    q,group_list = bdpcCoverPage5.read_excel('./kwd_core_city.xlsx') #关键词队列及属性
+    result = bdpcCoverPage5.result_init(group_list) #结果字典
     all_num = q.qsize() # 总词数
     page_dict = {'':'首页',10:'二页',20:'三页',30:'四页',40:'五页'} #查询页数
     f = open('{0}bdpc1_page5_info.txt'.format(today),'w',encoding="utf-8")
     f_url = open('{0}bdpc1_page5_rankurl.txt'.format(today),'w',encoding="utf-8")
     # 设置线程数
     for i in list(range(3)):
-        t = bdpcCover()
+        t = bdpcCoverPage5()
         t.setDaemon(True)
         t.start()
     q.join()

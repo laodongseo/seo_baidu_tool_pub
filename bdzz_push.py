@@ -32,7 +32,7 @@ def read_txt(filepath):
 # 推送url函数
 def push_url(retry=0):
             if  all_urls == []:
-                return '下一个'
+                return '结束'
             for data_urls in all_urls:
                 try:
                     str_urls = ''.join(data_urls)
@@ -52,7 +52,7 @@ def push_url(retry=0):
                             print(html,'推送成功',len(data_urls))
                             
                         elif '"error"' in html and 'over quota' in html:
-                            return '下一个'
+                            return '结束'
                         else:
                             f.write(str_urls)
                             f.flush()
@@ -78,13 +78,12 @@ if __name__ == "__main__":
         file_txt = lis[2]
         all_urls = read_txt(file_txt)  # 二维列表每组2000个url
         post_url = 'http://data.zz.baidu.com/urls?site=https://{0}&token={1}'.format(domain, token)
-        post_url = 'http://data.zz.baidu.com/urls?appid=1594426884830550&token=CRnc0XDQ1tJgBU4i&type=batch'
-
+        
         # 死循环每个域名把配额用完
         while 1:
             time.sleep(3)
             res = push_url()
-            if '下一个' == res:
+            if '结束' == res:
                 break
 
     f.close()

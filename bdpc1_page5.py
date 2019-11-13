@@ -59,7 +59,7 @@ class bdpcCoverPage5(threading.Thread):
             if retry > 0:
                 self.get_html(url,retry-1)
         else:
-            html = r.text
+            html = r.content.decode('utf-8')
             return html
 
     # 获取某词serp源码上自然排名的所有url

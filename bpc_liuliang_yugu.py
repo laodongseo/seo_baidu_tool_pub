@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-评估网站和竞品的流量占比
+评估网站和竞品的流量比
 domains.txt放要对比的域名,一行一个
 bdpc_serp.txt每行以json的形式记录关键词对应的自然排名url及排名值
 kwd_core_city.xlsx放关键词,可以多个sheet,但是每个sheet用第一列

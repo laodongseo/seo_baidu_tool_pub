@@ -1,13 +1,13 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
 评估网站和竞品的流量比
+给所有搜索词设个平均搜索量,计算如下：
+域名流量 = (排名第1词数 * 第1名点击率 + 排名第2词数 * 第2名点击率 +...+ 排名第10词数 * 第10名点击率) * 平均搜索量
 domains.txt放要对比的域名,一行一个
-bdpc_serp.txt每行以json的形式记录关键词对应的自然排名url及排名值
-kwd_core_city.xlsx放关键词,可以多个sheet,但是每个sheet用第一列
+bdpc_serp.txt每行以json的形式记录一个关键词首页自然排名url及排名值
+kwd_core_city.xlsx放关键词,可以多个sheet,每个sheet用第一列
 res.xlsx为结果，记录每个域名排名1—10的关键词个数
-(如果一个词同一个域名出现两个url排名全部都记录)
-假设每个词搜索量相同,计算如下：
-域名流量 = (第1名个数 * 第1名点击率 + 第2名个数 * 第2名点击率 +...+ 第10个数 * 第10名点击率) * 搜索量
+(如果一个词同一个域名出现两个url排名会全部记录)
 
 """
 
@@ -26,7 +26,7 @@ import random
 def make_result(domains):
     result = {}
     for domain in domains:
-        # 初始态1—10名排名个数全为0个
+        # 初始1—10名排名个数全为0个,不能写在循环外否则会产生深拷贝浅拷贝的问题
         init_value = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0}
         result[domain] = init_value
     return result
@@ -126,7 +126,7 @@ class BdpcLiuLiang(threading.Thread):
             kwd = q.get()
             url = "https://www.baidu.com/s?tn=48020221_28_hao_pg&ie=utf-8&wd={0}".format(kwd)
             try:
-                threadLock.acquire() # 一行分多次写入文件,加锁避免错乱
+                threadLock.acquire() # 一行分多次写入,加锁避免数据错乱
                 html = self.get_html(url)
                 encrypt_url_list_rank = self.get_encrpt_urls(html)
                 if encrypt_url_list_rank:
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     q = BdpcLiuLiang.read_excel('kwd_core_city.xlsx')
     f = open('{0}bdpc_serp.txt'.format(today),'w',encoding='utf-8')  # 保存serp结果数据
     # 设置线程数
-    for i in list(range(3)):
+    for i in list(range(6)):
         t = BdpcLiuLiang()
         t.setDaemon(True)
         t.start()

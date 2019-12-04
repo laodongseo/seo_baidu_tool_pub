@@ -1,15 +1,17 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-一个关键词serp上同一个域名出现N个url排名 计算N次
-相关网站.相关企业.智能小程序.其他人还在搜都会包含
-热议聚合.资讯聚合包含.搜索智能聚合包含.视频包含(黄忠小区二手房)
-百度百科不含,百度手机助手下载不含
+批量查询行业词采集移动端排名首页url提取域名计算各域名占比;
+长期监控各域名占比,观察行业流量的分发.
+(如果某域名占比>100%,不是bug,说明有词出现多个url排名)
+准备kwd.txt
+包含:相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合.包含视频
+不含:百度百科.百度手机助手下载
 sigma.baidu.com == xx_相关网站|xx_相关企业
 recommend_list.baidu.com == 其他人还在搜
 nourl.ubs.baidu.com == 搜索智能聚合
 bzclk.baidu.com == 结构化的展示样式
-准备kwd.txt
 """
+
 import requests
 from pyquery import PyQuery as pq
 import threading
@@ -20,8 +22,6 @@ import gc
 import json
 from openpyxl import load_workbook
 from openpyxl import Workbook
-
-
 
 
 
@@ -63,7 +63,7 @@ def save():
 
     # 写入txt
     res_format = sorted(result_all.items(), key=lambda s: s[1], reverse=True)
-    with open('res.txt','w',encoding='utf-8') as f:
+    with open('{0}res.txt'.format(today),'w',encoding='utf-8') as f:
         for domain,num in res_format:
             f.write(domain+'\t'+str(num)+'\n')
 
@@ -153,7 +153,6 @@ class bdmoCover(threading.Thread):
     def run(self):
         while 1:
             city,kwd = q.get()
-            # kwd = '王府井二手房'
             print(city,kwd,q.qsize())
             url = "https://m.baidu.com/s?ie=utf-8&word={0}".format(kwd)
             try:
@@ -180,26 +179,21 @@ if __name__ == "__main__":
     local_time = time.localtime()
     today = time.strftime('%Y-%m-%d', local_time)
     f_url = open('url_serp{}.txt'.format(today),'w',encoding="utf-8")
-    q,city_list = bdmoCover.read_excel('kwd_core_city.xlsx')
-    result = bdmoCover.result_init(city_list)  # 结果字典
-    result_all={}
-    # user_agent = {
-    #     'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; ALP-AL00 Build/HUAWEIALP-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/63.0.3239.83 Mobile Safari/537.36 T7/10.13 baiduboxapp/10.13.0.11 (Baidu; P1 8.1.0)'}
+    q,city_list = bdmoCover.read_excel('kwd_xiaoqu_city.xlsx')
+    result = bdmoCover.result_init(city_list)  # 结果字典区分城市统计
+    result_all={} # 不区分城市统计
     user_agent = {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 9; GM1900 Build/PKQ1.190110.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/66.0.3359.158 Mobile Safari/537.36 MicroMessenger/7.0.6.1500(0x2700063E) Process/appbrand0 NetType/4G Language/zh_CN'}
-    # user_agent = {
-    #     'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Mobile Safari/537.36'}
-    # user_agent = {
-    # 'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 12_1_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1'
-    # }
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; ALP-AL00 Build/HUAWEIALP-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/63.0.3239.83 Mobile Safari/537.36 T7/10.13 baiduboxapp/10.13.0.11 (Baidu; P1 8.1.0)',
+        'Referer': 'https://m.baidu.com/'}
     #设置线程数
-    for i in list(range(6)):
+    for i in list(range(2)):
         t = bdmoCover()
         t.setDaemon(True)
         t.start()
     q.join()
     f_url.close()
-
+    
+    # 统计每个域名出现了多少次
     for i in open('url_serp{}.txt'.format(today),'r',encoding='utf-8'):
         i = i.strip()
         line = i.split('\t')

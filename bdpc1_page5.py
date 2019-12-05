@@ -87,7 +87,7 @@ class bdpcCoverPage5(threading.Thread):
             col_a = sheet_obj['A']
             for cell in col_a:
                 kwd = (cell.value)
-                # 加个判断,防止一些不可见字符
+                # 加个判断吧
                 if kwd:
                     kwd_z = kwd+ '租房'
                     kwd_er = kwd + '二手房'

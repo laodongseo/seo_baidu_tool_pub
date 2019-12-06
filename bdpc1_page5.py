@@ -1,13 +1,14 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-监控某域名前五页排名变化，可实现分关键词类别监控
+分关键词种类批量查询首页/前二/三/四/五/五页覆盖率
 bdpc1_page5_info.txt记录每个kwd在第几页有排名
-bdpc1_page5_rankurl.txt记录每个kwd前五页排名的url，当前页面出现多个就记录多个
-生成的excel和txt是首页 前二/三/四/五/五页后的数量
-bdpc1_page5_info.txt的行数就是真正查询成功的词数
-excel文件kwd_core_city.xlsx 中每个sheet名代表一类关键词,每个sheet第一列放关键词
-现在百度PC反爬有点严重,head头要加cookie,查询频繁还要轮换cookie
+bdpc1_page5_rankurl.txt记录每个kwd前五页排名的url,页面出现多个就记多个
+bdpc1_page5.xlsx和bdpc1_page5.txt是统计结果
+bdpc1_page5_info.txt的行数为查询成功词数
+kwd_core_city.xlsx中sheet名代表关键词种类,每个sheet第一列放关键词
+cookie必须是登录baidu账号后的cookie否则很容易被反爬
 """
+
 import requests
 from pyquery import PyQuery as pq
 import threading
@@ -132,7 +133,7 @@ class bdpcCoverPage5(threading.Thread):
                 self.get_html(url,retry-1)
         else:
             html = r.content.decode('utf-8',errors='ignore')  # 用r.text有时候识别错误
-            url = r.url
+            url = r.url  # 反爬会重定向,取定向后的地址
             return html,url
 
     # 获取某词serp源码上自然排名的所有url
@@ -204,27 +205,28 @@ class bdpcCoverPage5(threading.Thread):
         while 1:
             group_kwd = q.get()
             group,kwd = group_kwd
+            print(group,kwd)
             try:
                 for page in page_dict.keys():
                     if page == '':
                         url = "https://www.baidu.com/s?tn=48020221_28_hao_pg&ie=utf-8&wd={0}".format(kwd)
                     else:
                         url = "https://www.baidu.com/s?tn=48020221_28_hao_pg&ie=utf-8&wd={0}&pn={1}".format(kwd,page)
-                    # print(url)
                     html,now_url = self.get_html(url)
                     encrypt_url_list = self.get_encrpt_urls(html,now_url)
-                    real_url_list = self.get_real_urls(encrypt_url_list)
-                    # print(real_url_list)
-                    domain_str = self.get_domains(real_url_list)
-                    if domain_str and domain in domain_str:
-                        page = '首页' if page == '' else page_dict[page]
-                        f.write('{0}\t{1}\t{2}\n'.format(kwd,page,group))
-                        for real_url in real_url_list:
-                            if domain in real_url:
-                                f_url.write('{0}\t{1}\t{2}\t{3}\n'.format(kwd,page,group,real_url))
-                        break
-                    if page == 40 and domain not in domain_str:
-                        f.write('{0}\t{1}\t{2}\n'.format(kwd,'五页后',group))
+                    # 源码ok再写入
+                    if encrypt_url_list:
+                        real_url_list = self.get_real_urls(encrypt_url_list)
+                        domain_str = self.get_domains(real_url_list)
+                        if domain_str and domain in domain_str:
+                            page = '首页' if page == '' else page_dict[page]
+                            f.write('{0}\t{1}\t{2}\n'.format(kwd,page,group))
+                            for real_url in real_url_list:
+                                if domain in real_url:
+                                    f_url.write('{0}\t{1}\t{2}\t{3}\n'.format(kwd,page,group,real_url))
+                            break
+                        if page == 40 and domain not in domain_str:
+                            f.write('{0}\t{1}\t{2}\n'.format(kwd,'五页后',group))
                 f.flush()
                 f_url.flush()
             except Exception as e:
@@ -244,7 +246,10 @@ if __name__ == "__main__":
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
         'Host': 'www.baidu.com',
         'Referer': 'https://www.hao123.com/?tn=48020221_28_hao_pg',
-        'Cookie':'BDUSS=RQSWpXeEd5a1lDLXF6OExrVmdzeW9WUnFqRWtTNGRpWEctOU1RSmw0bHB5WU5aSVFBQUFBJCQAAAAAAAAAAAEAAADlnXKtt7CwybK-vbYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGk8XFlpPFxZeG'
+        'is_xhr': '1',
+        'X-Requested-With': 'XMLHttpRequest',
+        'is_referer': 'https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&srcqid=3720942946388228931&tn=48020221_28_hao_pg&wd=seo&rsv_pq=e98531eb0004488e&rsv_t=1746b7LmCS0qfn89n4GHuc6v28Qh9vRpiPuJS%2FiLAQCSn3MUkcks%2F5JTuoHtkycJ%2BbGMoBBU0z8%2F&rqlang=cn',
+        'cookie':'BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; NOJS=1; BD_UPN=12314353; MSA_WH=346_288; H_WISE_SIDS=136721_138198_137831_114177_139149_120169_138490_133995_138878_137979_132909_137690_131247_137750_136680_118880_118865_118839_118832_118793_138165_107313_136431_138845_138691_136863_138147_139174_138776_136195_131861_137105_133847_138476_137734_138343_137467_138648_131423_138663_136537_138178_110085_137441_127969_137829_138275_127417_138312_137187_136635_138425_138562_138943_135718_138302_138239; H_PS_PSSID=1440_21099_30210_30245_29699_26350; sug=0; sugstore=0; ORIGIN=0; bdime=20100; H_PS_645EC=607dCUWuXpw3NdlXp716wheeouvfrYMdSgV%2FDEOshMglObRb1YYwNQxR0mI; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; BDSVRTM=0; COOKIE_SESSION=55433_0_8_8_3_12_0_1_7_5_215_3_55436_0_9_0_1575596447_0_1575596438%7C9%231036863_54_1573608641%7C9'
     }
     q,group_list = bdpcCoverPage5.read_excel('kwd_core_city.xlsx')  # 关键词队列及分类
     result = bdpcCoverPage5.result_init(group_list)  # 结果字典-记录首页到5页各多少词
@@ -255,7 +260,7 @@ if __name__ == "__main__":
     f_url = open('{0}bdpc1_page5_rankurl.txt'.format(today),'w',encoding="utf-8")
     file_path = f.name
     # 设置线程数
-    for i in list(range(1)):
+    for i in list(range(2)):
         t = bdpcCoverPage5()
         t.setDaemon(True)
         t.start()

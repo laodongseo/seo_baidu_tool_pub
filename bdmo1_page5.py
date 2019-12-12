@@ -144,7 +144,7 @@ class bdmoCoverPage5(threading.Thread):
         data_logs = []
         doc = pq(html)
         title = doc('title').text()
-        if '百度' in title and 'https://m.baidu.com/s?ie=utf-8' in url:
+        if '- 百度' in title and 'https://m.baidu.com/s?ie=utf-8' in url:
             try:
                 div_list = doc('.c-result').items()
             except Exception as e:

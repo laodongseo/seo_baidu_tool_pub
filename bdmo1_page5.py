@@ -1,8 +1,8 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-分关键词种类批量查询首页/前二/三/四/五/五页覆盖率
+分关键词种类批量查询首页/前二/三/四/五/五页词数
 bdmo1_page5_info.txt记录每个kwd在第几页有排名
-bdmo1_page5_rankurl.txt记录每个kwd前五页排名的url,页面出现多个就记多个
+bdmo1_page5_rankurl.txt记录每个kwd排名的url,当前页面出现多个就记多个
 bdmo1_page5.xlsx和bdmo1_page5.txt是统计结果
 bdmo1_page5_info.txt的行数为查询成功词数
 kwd_core_city.xlsx中sheet名代表关键词种类,每个sheet第一列放关键词

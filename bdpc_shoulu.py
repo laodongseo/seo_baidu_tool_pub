@@ -121,9 +121,8 @@ class BdpcShoulu(threading.Thread):
                     print(target_url,"未收录")
                     f.write(target_url + '\t' + '未收录\n')
             finally:
+                f.flush()
                 q.task_done()
-
-
 
 
 if __name__ == "__main__":

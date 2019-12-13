@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-kwd和url一对一查询 查首页自然排名(即含快照)前十名
+kwd和url一对一查询 查自然排名(含快照)前十名
 kwd_url.txt,每行放关键词和url,中间用制表符隔开(可从excel复制两列),
 url加http或者https,区分http和https
 区分http://aaa/bbb/和http://aaa/bbb
@@ -108,7 +108,7 @@ class BdpcRank1(threading.Thread):
             else:
                 if encrypt_url_list_rank:
                     rank_dict = self.make_dict(encrypt_url_list_rank)
-                    url_keys = rank_dict.keys()
+                    url_keys = list(rank_dict.keys())
                     if url_check in url_keys:
                         rank = rank_dict[url_check]
                         f.write(kwd+'\t'+url_check+'\t'+str(rank)+'\n')

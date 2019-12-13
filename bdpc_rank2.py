@@ -109,7 +109,7 @@ class BdpcRank2(threading.Thread):
                     rank_dict = self.make_dict(encrypt_url_list_rank)
                     url_keys = list(rank_dict.keys())
                     if domain not in ''.join(url_keys):
-                        f.write('{0}\n{1}\n{2}'.format(kwd,domain,'无'))
+                        f.write('{0}\t{1}\t{2}\n'.format(kwd,domain,'无'))
                         print(kwd,'无')
                     for real_url in url_keys:
                         if domain in real_url:

@@ -3,7 +3,7 @@
 采集百度pc首页排名的真实url
 准备kwd.txt,一行一个词
 线程数自己设,默认2
-要加自己账号登陆后的cookie
+cookie要用自己账号登陆后的cookie
 """
 import requests
 from pyquery import PyQuery as pq
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     q = BdpcRealUrl.read_txt('kwd.txt') 
     f = open('bdpc_real_url.txt','w+',encoding='utf-8')
     # 设置线程数
-    for i in list(range(1)):
+    for i in list(range(2)):
         t = BdpcRealUrl()
         t.setDaemon(True)
         t.start()

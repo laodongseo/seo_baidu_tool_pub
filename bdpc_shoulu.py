@@ -112,7 +112,7 @@ class BdpcShoulu(threading.Thread):
                 print(e)
             else:
                 if num == 1:
-                    lock.acquire(True) # 锁定
+                    lock.acquire() # 锁定
                     shoulu_num += 1
                     lock.release() # 释放
                     print(target_url,"收录")

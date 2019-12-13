@@ -12,6 +12,7 @@ from pyquery import PyQuery as pq
 import threading
 import queue
 import time
+import gc
 
 
 class BdpcShoulu(threading.Thread):
@@ -122,6 +123,8 @@ class BdpcShoulu(threading.Thread):
                     f.write(target_url + '\t' + '未收录\n')
             finally:
                 f.flush()
+                del target_url
+                gc.collect()
                 q.task_done()
 
 

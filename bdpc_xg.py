@@ -31,10 +31,10 @@ def get_html(url, retry=2):
 # 提取相关词
 def get_kwds(html,url):
     kwds = []
-    doc = pq(str(html))  # 偶尔有问题,强制转str
+    doc = pq(html)  # 偶尔有问题,强制转str
     title = doc('title').text()
     if '_百度搜索' in title and 'https://www.baidu.com/s?tn=48020221' in url:
-        # 异常处理,防止有些词没相关搜索报错
+        # 无相关搜索,不会报错
         xg_kwds = doc('#rs table tr th a').items()
         for kwd_xg in xg_kwds:
             kwd_xg = kwd_xg.text()
@@ -50,7 +50,7 @@ def main():
         kwd = q.get()
         url = 'https://www.baidu.com/s?tn=48020221_28_hao_pg&ie=utf-8&wd={}'.format(kwd)
         try:
-            html = get_html(url)
+            html,url = get_html(url)
             kwds = get_kwds(html,url)
         except Exception as e:
             print(e)

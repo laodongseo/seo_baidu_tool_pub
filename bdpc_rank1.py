@@ -49,7 +49,6 @@ class BdpcRank1(threading.Thread):
         doc = pq(html)
         title = doc('title').text()
         if '_百度搜索' in title and 'https://www.baidu.com/s?tn=48020221' in url:
-            doc = pq(html)
             div_list = doc('.result').items() # 自然排名/有快照
             # div_op_list = doc('.result-op').items() # 非自然排名
             for div in div_list:
@@ -133,7 +132,7 @@ if __name__ == "__main__":
     q = BdpcRank1.read_txt('kwd_url.txt')
     f = open('bdpc_rank1.txt','w',encoding='utf-8')
     # 设置线程数
-    for i in list(range(1)):
+    for i in list(range(2)):
         t = BdpcRank1()
         t.setDaemon(True)
         t.start()

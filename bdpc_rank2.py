@@ -66,7 +66,7 @@ class BdpcRank2(threading.Thread):
                                 encrypt_url_list_rank.append((encrypt_url,rank))
         else:
             print(title,'源码异常,可能反爬')
-            time.sleep(20)
+            time.sleep(100)
                     
         return encrypt_url_list_rank
 

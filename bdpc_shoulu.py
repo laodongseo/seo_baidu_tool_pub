@@ -61,7 +61,7 @@ class BdpcShoulu(threading.Thread):
                         encrypt_url_list.append(encrypt_url)
         else:
             print(title,'源码异常,可能反爬')
-            time.sleep(6)
+            time.sleep(100)
         return encrypt_url_list
 
     # 解密某条加密url
@@ -78,7 +78,7 @@ class BdpcShoulu(threading.Thread):
                 self.decrypt_url(encrypt_url,retry-1)
         else:
             real_url = r.headers['Location']
-            return real_url
+        return real_url
 
     # 获取结果页真实url
     def get_real_urls(self, encrypt_url_list):

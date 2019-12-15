@@ -158,7 +158,7 @@ if __name__ == "__main__":
     all_num = q.qsize() # 总词数
 
     # 设置线程数
-    for i in list(range(1)):
+    for i in list(range(2)):
         t = bdpcCover()
         t.setDaemon(True)
         t.start()

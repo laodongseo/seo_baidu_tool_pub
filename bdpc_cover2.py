@@ -76,7 +76,7 @@ class bdpcCover(threading.Thread):
                 self.decrypt_url(encrypt_url,retry-1)
         else:
             real_url = r.headers['Location']
-            return real_url
+        return real_url
 
     # 获取结果页排名真实url
     def get_real_urls(self, encrypt_url_list):

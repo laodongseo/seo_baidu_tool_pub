@@ -52,7 +52,7 @@ def get_res_num(html,url):
                     encrypt_url_list.append(encrypt_url)
     else:
         print(title,'源码异常,可能反爬')
-        time.sleep(6)
+        time.sleep(100)
     return all_num,len(encrypt_url_list)
 
 

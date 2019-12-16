@@ -108,7 +108,7 @@ class bdpcCover(threading.Thread):
         global success_num
         while 1:
             kwd = q.get()
-            url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
+            url = "https://www.baidu.com/s?ie=utf-8&tn=48020221_28_hao_pg&wd={0}".format(kwd)
             try:
                 html,url = self.get_html(url)
                 encrypt_url_list = self.get_encrpt_urls(html,url)

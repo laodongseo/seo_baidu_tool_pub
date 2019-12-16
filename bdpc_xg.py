@@ -50,8 +50,8 @@ def main():
         kwd = q.get()
         url = 'https://www.baidu.com/s?tn=48020221_28_hao_pg&ie=utf-8&wd={}'.format(kwd)
         try:
-            html,url = get_html(url)
-            kwds = get_kwds(html,url)
+            html,now_url = get_html(url)
+            kwds = get_kwds(html,now_url)
         except Exception as e:
             print(e)
         else:

@@ -7,6 +7,7 @@ bdmo1_page5.xlsx和bdmo1_page5.txt是统计结果
 bdmo1_page5_info.txt的行数为查询成功词数
 kwd_core_city.xlsx中sheet名代表关键词种类,每个sheet第一列放关键词
 cookie必须是登录baidu账号后的cookie否则很容易被反爬
+默认线程数2
 
 """
 

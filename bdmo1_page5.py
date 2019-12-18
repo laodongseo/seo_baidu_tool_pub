@@ -1,12 +1,11 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-分关键词种类批量查询首页/前二/三/四/五/五页词数
+分关键词种类批量查询网站首页/前二/三/四/五/五页覆盖率
 bdmo1_page5_info.txt记录每个kwd在第几页有排名
-bdmo1_page5_rankurl.txt记录每个kwd排名的url,当前页面出现多个就记多个
+bdmo1_page5_rankurl.txt记录每个kwd排名的url,当前页面有多个就记多个
 bdmo1_page5.xlsx和bdmo1_page5.txt是统计结果
 bdmo1_page5_info.txt的行数为查询成功词数
 kwd_core_city.xlsx中sheet名代表关键词种类,每个sheet第一列放关键词
-content = gzip.decompress(resp.text).decode('utf-8','ignore')
 cookie必须是登录baidu账号后的cookie否则很容易被反爬
 
 """
@@ -93,10 +92,7 @@ class bdmoCoverPage5(threading.Thread):
                 kwd = (cell.value)
                 # 加个判断吧
                 if kwd:
-                    kwd_z = kwd+ '租房'
-                    kwd_er = kwd + '二手房'
-                    q.put([sheet_name,kwd_z])
-                    q.put([sheet_name,kwd_er])
+                    q.put([sheet_name,kwd])
         return q, group_list
 
     # 初始化结果字典
@@ -144,7 +140,7 @@ class bdmoCoverPage5(threading.Thread):
         data_logs = []
         doc = pq(html)
         title = doc('title').text()
-        if '- 百度' in title and 'https://m.baidu.com/s?ie=utf-8' in url:
+        if '- 百度' in title and 'https://m.baidu.com/from=1001703y' in url:
             try:
                 div_list = doc('.c-result').items()
             except Exception as e:
@@ -155,6 +151,7 @@ class bdmoCoverPage5(threading.Thread):
                     data_logs.append(data_log) if data_log is not None else data_logs
         else:
             print(title,'源码异常,可能反爬')
+            time.sleep(100)
         return data_logs
 
     # 提取排名的真实url
@@ -196,9 +193,9 @@ class bdmoCoverPage5(threading.Thread):
             try:
                 for page in page_dict.keys():
                     if page == '':
-                        url = "https://m.baidu.com/s?ie=utf-8&word={0}".format(kwd)
+                        url = "https://m.baidu.com/from=1001703y/ssid=5ae0977cdc1ac126558a25f695277282.3.1576654032.1.6RmhZekZekV5/s?word={0}&ie=utf-8".format(kwd)
                     else:
-                        url = "https://m.baidu.com/s?ie=utf-8&word={0}&pn={1}".format(kwd,page)
+                        url = "https://m.baidu.com/from=1001703y/ssid=5ae0977cdc1ac126558a25f695277282.3.1576654032.1.6RmhZekZekV5/s?pn={0}&usm=2&word={1}&ie=utf-8".format(kwd,page)
                     html,now_url = self.get_html(url)
                     data_logs = self.get_data_logs(html,now_url)
                     # 源码ok再写入
@@ -219,7 +216,7 @@ class bdmoCoverPage5(threading.Thread):
             except Exception as e:
                 print(e)
             finally:
-                del kwd
+                del kwd,group
                 gc.collect()
                 q.task_done()
 
@@ -232,7 +229,7 @@ if __name__ == "__main__":
     user_agent = {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; ALP-AL00 Build/HUAWEIALP-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/63.0.3239.83 Mobile Safari/537.36 T7/10.13 baiduboxapp/10.13.0.11 (Baidu; P1 8.1.0)',
         'Referer': 'https://m.baidu.com/',
-        'cookie':'BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; NOJS=1; BD_UPN=12314353; MSA_WH=346_288; H_WISE_SIDS=136721_138198_137831_114177_139149_120169_138490_133995_138878_137979_132909_137690_131247_137750_136680_118880_118865_118839_118832_118793_138165_107313_136431_138845_138691_136863_138147_139174_138776_136195_131861_137105_133847_138476_137734_138343_137467_138648_131423_138663_136537_138178_110085_137441_127969_137829_138275_127417_138312_137187_136635_138425_138562_138943_135718_138302_138239; sug=0; sugstore=0; ORIGIN=0; bdime=20100; delPer=0; BD_CK_SAM=1; PSINO=3; H_PS_PSSID=; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; BDSVRTM=102; COOKIE_SESSION=38_0_7_8_1_7_0_0_7_4_8_2_0_0_0_0_1575541011_0_1575597626%7C9%231036863_54_1573608641%7C9'
+        'cookie':'wpr=0; BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; MSA_PBT=146; plus_lsv=f197ee21ffd230fd; plus_cv=1::m:49a3f4a6; MSA_ZOOM=1000; MSA_WH=394_670; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; SE_LAUNCH=5%3A26276289_0%3A26276289; ysm=10277|10277; lsv=searchboxcss_591d86b-globalT_androidcss_1d3e059-wwwT_androidcss_42f8b70-globalBcss_14d95eb-wwwBcss_99b32fc; COOKIE_SESSION=25_0_0_1_0_t1_9_2_2_0_0_2_13_1576577784%7C2%230_0_0_0_0_0_0_0_1576577759%7C1; FC_MODEL=-1_0_5_0_4.71_1_0_0_1_0_4.71_-1_2_15_2_3_0_1576577980833_1576577784549%7C9%234.71_-1_-1_2_2_1576577980833_1576577784549%7C9; BDRCVFR[xoix5KwSHTc]=9xWipS8B-FspA7EnHc1QhPEUf; delPer=0; PSINO=3; H_PS_PSSID=; H_WISE_SIDS=136721_139419_139405_137831_114177_139148_120169_133995_138878_137979_137690_131247_132552_118880_118865_118839_118832_118793_138165_138882_136431_138845_138691_139283_139296_136863_138147_138114_139174_136195_131861_137105_139274_139400_139691_139430_133847_137734_138343_137467_138564_134256_131423_139396_138663_136537_110085_137441_127969_138302_137252_139507_139408_127417_138312_137187_136635_138425_139732_138943_135718_139221_139438_138753; rsv_i=a6aamxuScEJgZWD5o%2BojaSqSgR9aujTcvh1A4xMuiBzXRToQcCuTf8bzAhrmeTrgBRwomlxFgMtaszfud1CWLuo4e1agR%2F0; FEED_SIDS=345657_1218_14; BDSVRTM=412; BAIDULOC=11562630.22873027_149874.6866054242_16432_20001_1576654423165; H5LOC=1; Hm_lvt_12423ecbc0e2ca965d84259063d35238=1576231575,1576233002,1576577372,1576654423; Hm_lpvt_12423ecbc0e2ca965d84259063d35238=1576654423; ___rl__test__cookies=1576654423904; OUTFOX_SEARCH_USER_ID_NCOO=670906608.6866206; BDSVRBFE=Go; wise_tj_ub=ci%40103_21_-1_-1_-1_-1_-1%7Ciq%4014_1_13_232%7Ccb%40-1_-1_-1_-1_-1_-1_-1%7Cce%401%7Ctse%401; BDICON=10123156; __bsi=8491403584404635497_00_19_N_R_11_0303_c02f_Y'
         }
     q,group_list = bdmoCoverPage5.read_excel('kwd_core_city.xlsx')  # 关键词队列及分类
     result = bdmoCoverPage5.result_init(group_list)  # 结果字典-记录首页到5页各多少词
@@ -243,7 +240,7 @@ if __name__ == "__main__":
     f_url = open('{0}bdmo1_page5_rankurl.txt'.format(today),'w',encoding="utf-8")
     file_path = f.name
     # 设置线程数
-    for i in list(range(3)):
+    for i in list(range(2)):
         t = bdmoCoverPage5()
         t.setDaemon(True)
         t.start()

@@ -1,13 +1,11 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-分关键词种类批量查询网站首页/前二/三/四/五/五页覆盖率
+分关键词种类批量查询首页/前二/三/四/五/五页覆盖率,bdmo1_page5.xlsx和bdmo1_page5.txt是统计结果
 bdmo1_page5_info.txt记录每个kwd在第几页有排名
 bdmo1_page5_rankurl.txt记录每个kwd排名的url,当前页面有多个就记多个
-bdmo1_page5.xlsx和bdmo1_page5.txt是统计结果
 bdmo1_page5_info.txt的行数为查询成功词数
 kwd_core_city.xlsx中sheet名代表关键词种类,每个sheet第一列放关键词
 cookie必须是登录baidu账号后的cookie否则很容易被反爬
-默认线程数2
 
 """
 
@@ -196,7 +194,7 @@ class bdmoCoverPage5(threading.Thread):
                     if page == '':
                         url = "https://m.baidu.com/from=1001703y/ssid=5ae0977cdc1ac126558a25f695277282.3.1576654032.1.6RmhZekZekV5/s?word={0}&ie=utf-8".format(kwd)
                     else:
-                        url = "https://m.baidu.com/from=1001703y/ssid=5ae0977cdc1ac126558a25f695277282.3.1576654032.1.6RmhZekZekV5/s?pn={0}&usm=2&word={1}&ie=utf-8".format(kwd,page)
+                        url = "https://m.baidu.com/from=1001703y/ssid=5ae0977cdc1ac126558a25f695277282.3.1576654032.1.6RmhZekZekV5/s?pn={0}&usm=2&word={1}&ie=utf-8".format(page,kwd)
                     html,now_url = self.get_html(url)
                     data_logs = self.get_data_logs(html,now_url)
                     # 源码ok再写入
@@ -241,7 +239,7 @@ if __name__ == "__main__":
     f_url = open('{0}bdmo1_page5_rankurl.txt'.format(today),'w',encoding="utf-8")
     file_path = f.name
     # 设置线程数
-    for i in list(range(2)):
+    for i in list(range(3)):
         t = bdmoCoverPage5()
         t.setDaemon(True)
         t.start()

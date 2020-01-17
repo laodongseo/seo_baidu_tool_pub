@@ -1,0 +1,250 @@
+# ‐*‐ coding: utf‐8 ‐*‐
+"""
+分关键词种类监控多个域名首页词数
+bdmo1_index_info.txt记录监控站点词的排名及url
+相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合包含.视频全部算在排名内
+所以首页排名有可能大于10
+bdmo1_index_all.txt记录所有url
+bdmo1_index.xlsx和bdmo1_index.txt是统计结果
+bdmo1_index_info.txt的行数为查询成功词数
+kwd_core_city.xlsx中sheet名代表关键词种类,每个sheet第一列放关键词
+cookie必须是登录baidu账号后的cookie否则很容易被反爬
+自然排名mu属性值为排名url,
+特殊样式mu为空或不存在,提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
+"""
+
+import requests
+from pyquery import PyQuery as pq
+import threading
+import queue
+import time
+from urllib.parse import urlparse
+from openpyxl import load_workbook
+from openpyxl import Workbook
+import time
+import gc
+import json
+
+
+# 计算最终结果
+def get_result(file_path, result):
+    for line in open(file_path, 'r', encoding='utf-8'):
+        line = line.strip().split('\t')
+        rank = line[2]
+        group = line[3]
+        if rank != '无':
+            result[group]['首页'] += 1
+        result[group]['总词数'] += 1
+    return result
+
+
+# 写入excel文件
+def write_excel(group_list, result_last, today):
+    wb = Workbook()
+    # 创建sheet
+    for group in group_list:
+        sheet_num = 0
+        wb.create_sheet(u'{0}'.format(group), index=sheet_num)
+        sheet_num += 1
+    # 写内容
+    row_first = ['日期', '首页','总词数'] # 第一行
+    for group, dict_value in result_last.items():
+        # 写第一行
+        wb[group].append(row_first)
+        # 写数据
+        row_value = [today]
+        for key,value in dict_value.items():
+            row_value.append(value)
+        wb[u'{0}'.format(group)].append(row_value)
+    wb.save('{0}bdmo1_index.xlsx'.format(today))
+
+
+class bdmoIndexMonitor(threading.Thread):
+
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    @staticmethod
+    def read_excel(filepath):
+        q = queue.Queue()
+        group_list = []
+        kwd_dict = {}
+        wb_kwd = load_workbook(filepath)
+        for sheet_obj in wb_kwd:
+            sheet_name = sheet_obj.title
+            group_list.append(sheet_name)
+            kwd_dict[sheet_name]= []
+            col_a = sheet_obj['A']
+            for cell in col_a:
+                kwd = (cell.value)
+                # 加个判断吧
+                if kwd:
+                    kwd_z = kwd+ '租房'
+                    kwd_er = kwd + '二手房'
+                    q.put([sheet_name,kwd_z])
+                    q.put([sheet_name,kwd_er])
+        return q, group_list
+
+    # 初始化结果字典
+    @staticmethod
+    def result_init(group_list):
+        result = {} 
+        for group in group_list:
+            result[group] = {'首页':0,'总词数':0}
+        print("结果字典init...")
+        return result
+
+
+    # 获取某词serp源码
+    def get_html(self,url,retry=2):
+        try:
+            r = requests.get(url=url,headers=my_header,timeout=5)
+        except Exception as e:
+            print('获取源码失败',e)
+            time.sleep(6)
+            if retry > 0:
+                self.get_html(url,retry-1)
+        else:
+            html = r.content.decode('utf-8',errors='ignore')  # 用r.text有时候识别错误
+            url = r.url  # 反爬会重定向,取定向后的地址
+            return html,url
+
+    # 获取某词的serp源码上包含排名url的div块
+    def get_divs(self, html ,url):
+        div_list = []
+        doc = pq(html)
+        title = doc('title').text()
+        if '- 百度' in title and 'https://m.baidu.com/s?ie=utf-8' in url:
+            try:
+                div_list = doc('.c-result').items()
+                # 如果mu为空,.c-result-content header a会有数据,这类数据样式特别,比如资讯聚合
+                a_list = doc('.c-result .c-result-content header a').items()
+            except Exception as e:
+                print('提取div块失败', e)
+            else:
+                pass
+        else:
+            print('源码异常---------------------')
+            time.sleep(120)
+        return div_list
+
+    # 提取排名的真实url
+    def get_real_urls(self, div_list):
+        real_urls_rank = []
+        if div_list:
+            for div in div_list:
+                data_log = div.attr('data-log')
+                data_log = json.loads(data_log.replace("'", '"')) # json字符串双引号
+                srcid = data_log['ensrcid'] if 'ensrcid' in data_log  else 'ensrcid' # 样式特征
+                rank_url = data_log['mu'] # mu为空或者不存在
+                rank = data_log['order']
+                if rank_url:
+                    real_urls_rank.append((rank_url,rank,srcid))
+                else:
+                    article = div('.c-result-content article')
+                    link = article.attr('rl-link-href')
+                    real_urls_rank.append((link,rank,srcid))
+        return real_urls_rank
+
+    # 提取某url的域名部分
+    def get_domain(self,real_url):
+        domain = None
+        try:
+           res = urlparse(real_url)
+        except Exception as e:
+           print (e,real_url)
+        else:
+           domain = res.netloc
+        return domain
+
+    # 获取某词serp源码首页排名所有域名
+    def get_domains(self,real_url_list):
+            domain_list = [self.get_domain(real_url) for real_url in real_url_list]
+            # 一个词某域名多个url有排名,算一次
+            domain_set = set(domain_list)
+            domain_set = domain_set.remove(None) if None in domain_set else domain_set
+            domain_str = ','.join(domain_set)
+            return domain_str
+
+    # 线程函数
+    def run(self):
+        while 1:
+            group_kwd = q.get()
+            group,kwd = group_kwd
+            print(group,kwd)
+            try:
+                url = "https://m.baidu.com/s?ie=utf-8&word={0}".format(kwd)
+                html,now_url = self.get_html(url)
+                divs_res = self.get_divs(html,now_url)
+                # 源码ok再写入
+                if divs_res:
+                    real_urls_rank = self.get_real_urls(divs_res)
+                    real_urls = []
+                    for my_url,my_order,my_attr in real_urls_rank:
+                        real_urls.append(my_url)
+                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,my_attr,group))
+                    f_all.flush()
+                    domain_str = self.get_domains(real_urls)
+                    for domain in domains:
+                        if domain not in domain_str:
+                              f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group,domain))
+                        else:
+                            for my_url,my_order,my_attr in real_urls_rank:
+                                if domain in my_url:
+                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,group,domain))
+                                    break # 取第一个排名url
+                f.flush()
+            except Exception as e:
+                print(e)
+            finally:
+                del kwd
+                gc.collect()
+                q.task_done()
+                
+
+
+if __name__ == "__main__":
+    start = time.time()
+    local_time = time.localtime()
+    today = time.strftime('%Y%m%d',local_time)
+    domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com']
+    domain = '5i5j.com'
+    my_header = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Connection': 'keep-alive',
+        'Cookie': 'BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; MSA_PBT=146; plus_lsv=f197ee21ffd230fd; plus_cv=1::m:49a3f4a6; MSA_ZOOM=1056; MSA_WH=414_736; COOKIE_SESSION=2855_6_3_6_4_m1_7_8_0_0_1_6_48_1578649761%7C9%230_0_0_0_0_0_0_0_1578636926%7C1; FC_MODEL=-1_6_3_0_7.28_0_3_0_0_0_283.07_-1_7_7_6_11_0_1578650188874_1578649761311%7C9%237.28_-1_-1_7_6_1578650188874_1578649761311%7C9; H_PS_PSSID=; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03288920344; delPer=0; PSINO=3; H_WISE_SIDS=141144_139203_139419_139403_137831_114177_139396_135846_139148_120169_139864_140833_133995_138878_137979_140173_131247_132552_140227_118880_118865_118839_118832_118793_138165_107317_138883_140260_136431_139046_140592_138147_140120_139174_139624_140114_136196_131861_137105_140591_139694_138586_133847_140792_137734_140545_134256_131423_140823_138663_136537_141103_110085_140325_127969_140622_140595_140864_139802_137252_139408_127417_138312_138425_139733_139912_140685_139926_140596_138754_140964; FEED_SIDS=345657_0113_8; Hm_lvt_12423ecbc0e2ca965d84259063d35238=1578632578,1578640885,1578646881,1578880697; SE_LAUNCH=5%3A26314678_0%3A26314678; rsv_i=0145AUxG3XFh5hste9dXED%2FtBt7QdwocVgy8MNIDFD%2FqxXut9LoO0cJ84FJvz3WoYkVml5f%2BBfxYrNkd2WvGrJsFIbnDBh4; BDSVRTM=384; Hm_lpvt_12423ecbc0e2ca965d84259063d35238=1578880700; ___rl__test__cookies=1578880924415; OUTFOX_SEARCH_USER_ID_NCOO=226708085.36203498; BDSVRBFE=Go; wise_tj_ub=ci%4089_44_89_44_90_137_54%7Ciq%403_4_3_511%7Ccb%40-1_-1_-1_-1_-1_-1_-1%7Cce%401%7Ctse%401; __bsi=8932389214787994849_00_8_R_R_8_0303_c02f_Y; BDICON=10123156',
+        'Host': 'm.baidu.com',
+        'Referer': 'https://m.baidu.com/',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1'}
+    q,group_list = bdmoIndexMonitor.read_excel('kwd_core_city.xlsx')  # 关键词队列及分类
+    result = bdmoIndexMonitor.result_init(group_list)  # 结果字典
+    all_num = q.qsize() # 总词数
+    f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")
+    f_all = open('{0}bdmo1_index_all.txt'.format(today),'w',encoding="utf-8")
+    file_path = f.name
+    # 设置线程数
+    for i in list(range(1)):
+        t = bdmoIndexMonitor()
+        t.setDaemon(True)
+        t.start()
+    q.join()
+    f.close()
+    f_all.close()
+    # 根据bdmo1_index_info.txt数据计算结果
+    result_last = get_result(file_path,result)
+    # 写入txt文件
+    with open('{0}bdmo1_index.txt'.format(today), 'w', encoding="utf-8") as f_res:
+        for group,dict_value in result_last.items():
+            f_res.write(group + '\t')
+            for key,value in dict_value.items():
+                f_res.write(str(value) + '\t')
+            f_res.write('\n')
+    end = time.time()
+    # 写入excel
+    write_excel(group_list,result_last,today)
+    print('关键词共{0}个,成功个数看page5_info.txt,耗时{1}min'.format(all_num, (end - start) / 60))

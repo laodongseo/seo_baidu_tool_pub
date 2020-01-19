@@ -56,7 +56,7 @@ def write_domains_txt(result_last):
                 f_res.write('\n')
 
 
-# 写excel,只写自己域名结果
+# 写excel
 def write_myexcel(group_list, result_last, today,my_domain):
     wb = Workbook()
     wb_all = Workbook()

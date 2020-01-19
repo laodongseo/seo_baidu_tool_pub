@@ -1,17 +1,21 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-批量查询关键词采集移动端首页排名url计算各域名占比;
-长期监控,观察行业流量的分发.
-(如果某域名占比>100%,不是bug,说明有词出现多个url排名)
-关键词文件kwd_xiaoqu_city.xlsx,每个sheet名代表关键词类别,可实现分关键词种类监控,sheet第一列放词
-包含:相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合包含.视频(黄忠小区二手房)
-不含:百度百科.百度手机助手下载
+功能:分关键词类别批量查关键词采集移动端首页排名url计算各域名占比;
+公式:某域名url个数/采集总url个数(一个词某域名可能有多个url排名计算在内)
+说明:
+   包含:相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合包含.视频(黄忠小区二手房)
+   不含:百度手机助手下载的样式
+   kwd_xiaoqu_city.xlsx:sheet名为关键词类别,sheet第一列放词
+   http请求的cookie一定要用登录后的cookie
+结果:
+   res.txt:整体统计结果
+   bdmo1_page5.xlsx 分关键词类别统计
+   url_serp.txt:serp所有url
 sigma.baidu.com:xx_相关网站|xx_相关企业
 recommend_list.baidu.com:其他人还在搜
 nourl.ubs.baidu.com:搜索智能聚合
 bzclk.baidu.com:结构化的展示样式
-/sf:xx-视频
-res.txt是统计结果,url_serp.txt是所有的链接
+/sf:某某-视频
 """
 
 import requests
@@ -40,7 +44,7 @@ def get_domain(real_url):
     return domain
 
 
-# 获取某词serp源码首页排名真实url的域名部分
+# 采集某词首页所有排名真实url域名部分
 def get_domains(real_urls):
         domain_list = [get_domain(real_url) for real_url in real_urls]
         # 搜一个词 同一个域名多个url出现排名 只计算一次
@@ -85,9 +89,12 @@ class bdmoCover(threading.Thread):
             col_a = sheet_obj['A']
             for cell in col_a:
                 kwd = (cell.value)
-                # 加个判断吧
+                # 加个判断,防止一些不可见字符
                 if kwd:
-                    q.put([sheet_name,kwd])
+                    kwd_z = kwd + '租房'
+                    kwd_er = kwd + '二手房'
+                    q.put([sheet_name,kwd_z])
+                    q.put([sheet_name,kwd_er])
         return q,city_list
 
     # 初始化结果字典
@@ -102,7 +109,7 @@ class bdmoCover(threading.Thread):
     # 获取某词serp源码
     def get_html(self,url,retry=2):
         try:
-            r = requests.get(url=url,headers=user_agent,timeout=5)
+            r = requests.get(url=url,headers=my_header,timeout=5)
         except Exception as e:
             print('获取源码失败',e)
             if retry > 0:
@@ -120,7 +127,7 @@ class bdmoCover(threading.Thread):
         if '- 百度' in title and 'https://m.baidu.com/ssid=da83cc8d88909a31' in url:
             try:
                 div_list = doc('.c-result').items()
-                # 如果mu为空,.c-result-content header a会有数据,否则没有
+                # 如果mu为空,.c-result-content header a会有数据,这类数据样式特别,比如资讯聚合
                 a_list = doc('.c-result .c-result-content header a').items()
             except Exception as e:
                 print('提取div块失败', e)
@@ -177,14 +184,23 @@ if __name__ == "__main__":
     start = time.time()
     local_time = time.localtime()
     today = time.strftime('%Y-%m-%d', local_time)
-    f_url = open('url_serp{}.txt'.format(today),'w',encoding="utf-8")
+    f_url = open('{}url_serp.txt'.format(today),'w',encoding="utf-8")
     q,city_list = bdmoCover.read_excel('kwd_core_city.xlsx')
-    result = bdmoCover.result_init(city_list)  # 结果字典区分城市统计
+    result = bdmoCover.result_init(city_list)  # 初始化结果字典
     result_all={} # 不区分城市统计
-    user_agent = {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; ALP-AL00 Build/HUAWEIALP-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/63.0.3239.83 Mobile Safari/537.36 T7/10.13 baiduboxapp/10.13.0.11 (Baidu; P1 8.1.0)',
+    # head设置
+    my_header = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Connection': 'keep-alive',
+        'Cookie': 'BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; MSA_PBT=146; plus_lsv=f197ee21ffd230fd; plus_cv=1::m:49a3f4a6; MSA_ZOOM=1056; MSA_WH=414_736; COOKIE_SESSION=2855_6_3_6_4_m1_7_8_0_0_1_6_48_1578649761%7C9%230_0_0_0_0_0_0_0_1578636926%7C1; FC_MODEL=-1_6_3_0_7.28_0_3_0_0_0_283.07_-1_7_7_6_11_0_1578650188874_1578649761311%7C9%237.28_-1_-1_7_6_1578650188874_1578649761311%7C9; H_PS_PSSID=; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03288920344; delPer=0; PSINO=3; H_WISE_SIDS=141144_139203_139419_139403_137831_114177_139396_135846_139148_120169_139864_140833_133995_138878_137979_140173_131247_132552_140227_118880_118865_118839_118832_118793_138165_107317_138883_140260_136431_139046_140592_138147_140120_139174_139624_140114_136196_131861_137105_140591_139694_138586_133847_140792_137734_140545_134256_131423_140823_138663_136537_141103_110085_140325_127969_140622_140595_140864_139802_137252_139408_127417_138312_138425_139733_139912_140685_139926_140596_138754_140964; FEED_SIDS=345657_0113_8; Hm_lvt_12423ecbc0e2ca965d84259063d35238=1578632578,1578640885,1578646881,1578880697; SE_LAUNCH=5%3A26314678_0%3A26314678; rsv_i=0145AUxG3XFh5hste9dXED%2FtBt7QdwocVgy8MNIDFD%2FqxXut9LoO0cJ84FJvz3WoYkVml5f%2BBfxYrNkd2WvGrJsFIbnDBh4; BDSVRTM=384; Hm_lpvt_12423ecbc0e2ca965d84259063d35238=1578880700; ___rl__test__cookies=1578880924415; OUTFOX_SEARCH_USER_ID_NCOO=226708085.36203498; BDSVRBFE=Go; wise_tj_ub=ci%4089_44_89_44_90_137_54%7Ciq%403_4_3_511%7Ccb%40-1_-1_-1_-1_-1_-1_-1%7Cce%401%7Ctse%401; __bsi=8932389214787994849_00_8_R_R_8_0303_c02f_Y; BDICON=10123156',
+        'Host': 'm.baidu.com',
         'Referer': 'https://m.baidu.com/',
-        'Cookie':'BDPASSGATE=IlPT2AEptyoA_yiU4V_43kIN8enzTri4H4PISkpT36ePdCyWmhTOAqVeEzChZm_YHi4hzp3afcJboCj-LzdXbaEddwYAhFpOakyM-M725aTvL0tdsbco_2z5V6g4trnG8vN7z4w1F3VEVFoKewPJpuo4ov4S9xFuku8O75LJrNO0YUOpDH8Pr7aTY767O-0APNu5-fqnhCpDMpihVPXkSS3Fg6chWp1L70aOatY6C3D5q6oY0RuiZMExGI8mFppi_x3nBQOLkKaoEV55qysc; max-age=43200; domain=.baidu.com; path=/'}
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1'}
 
 
     #设置线程数
@@ -194,7 +210,6 @@ if __name__ == "__main__":
         t.start()
     q.join()
     f_url.close()
-    
     # 统计每个域名出现了多少次
     for i in open('{0}url_serp.txt'.format(today),'r',encoding='utf-8'):
         i = i.strip()
@@ -205,7 +220,7 @@ if __name__ == "__main__":
             domain = get_domain(url)
             result[city][domain] = result[city][domain]+1 if domain in result[city] else 1
             result_all[domain] = result_all[domain]+1 if domain in result_all else 1
-        if url.startswith('/sf'):
+        if url.startswith('/sf'):# 独立提取出来
             result[city]['/sf'] = result[city]['/sf'] + 1 if '/sf' in result[city] else 1
             result_all['/sf'] = result_all['/sf'] + 1 if '/sf' in result_all else 1
     # 结果保存文件

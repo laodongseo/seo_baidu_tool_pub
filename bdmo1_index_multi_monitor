@@ -1,16 +1,21 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-分关键词种类监控多个域名首页词数
-bdmo1_index_info.txt记录监控站点词的排名及url
-相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合包含.视频全部算在排名内
-所以首页排名有可能大于10
-bdmo1_index_all.txt记录所有url
-bdmo1_index.xlsx和bdmo1_index.txt是统计结果
-bdmo1_index_info.txt的行数为查询成功词数
-kwd_core_city.xlsx中sheet名代表关键词种类,每个sheet第一列放关键词
-cookie必须是登录baidu账号后的cookie否则很容易被反爬
-自然排名mu属性值为排名url,
-特殊样式mu为空或不存在,提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
+功能:
+   1)指定域名,分关键词种类监控首页词数
+   2)提取serp所有url,提取域名并统计各域名首页覆盖率
+提示:
+  1)相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合.视频全部算在内
+    所以首页排名有可能大于10
+  2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
+    提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
+  3)kwd_core_city.xlsx:sheet名为关键词种类,sheet第一列放关键词
+结果:
+    bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
+    bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率
+    bdmo1_index.xlsx:自己站每类词首页词数
+    bdmo1_index_domains.txt:各监控站点每类词的首页词数
+    cookie必须是登录baidu账号后的cookie否则很容易被反爬
+
 """
 
 import requests
@@ -32,31 +37,58 @@ def get_result(file_path, result):
         line = line.strip().split('\t')
         rank = line[2]
         group = line[3]
+        domain = line[4]
         if rank != '无':
-            result[group]['首页'] += 1
-        result[group]['总词数'] += 1
+            result[domain][group]['首页'] += 1
+        result[domain][group]['总词数'] += 1
     return result
 
 
-# 写入excel文件
-def write_excel(group_list, result_last, today):
+# 写txt,所有监控域名的结果
+def write_domains_txt(result_last):
+    with open('{0}bdmo1_index_domains.txt'.format(today), 'w', encoding="utf-8") as f_res:
+        f_res.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format('日期','域名','词类','首页词数','查询词数'))
+        for now_domain,dict_value in result_last.items():
+            for group, dict_index_all in dict_value.items():
+                f_res.write('{0}\t{1}\t{2}\t'.format(today,now_domain,group))
+                for key, value in dict_index_all.items():
+                    f_res.write(str(value) + '\t')
+                f_res.write('\n')
+
+
+# 写excel,只写自己域名结果
+def write_myexcel(group_list, result_last, today,my_domain):
     wb = Workbook()
-    # 创建sheet
+    wb_all = Workbook()
+    # 创建sheet写表头
     for group in group_list:
         sheet_num = 0
         wb.create_sheet(u'{0}'.format(group), index=sheet_num)
+        wb_all.create_sheet(u'{0}'.format(group), index=sheet_num)
+        row_first = ['日期', '首页', '总词数']
+        row_first2 = ['日期', '域名','首页', '总词数']
+        # 写表头
+        wb[group].append(row_first)
+        wb_all[group].append(row_first2)
         sheet_num += 1
     # 写内容
-    row_first = ['日期', '首页','总词数'] # 第一行
-    for group, dict_value in result_last.items():
-        # 写第一行
-        wb[group].append(row_first)
-        # 写数据
-        row_value = [today]
-        for key,value in dict_value.items():
-            row_value.append(value)
-        wb[u'{0}'.format(group)].append(row_value)
+    for domain, dict_value in result_last.items():
+        if domain == my_domain:
+            for group, dict_index_all in dict_value.items():
+                # 写数据
+                row_value = [today]
+                for key,value in dict_index_all.items():
+                    row_value.append(value)
+                wb[u'{0}'.format(group)].append(row_value)
+
+        for group, dict_index_all in dict_value.items():
+            # 写数据
+            row_value = [today,domain]
+            for key, value in dict_index_all.items():
+                row_value.append(value)
+            wb_all[u'{0}'.format(group)].append(row_value)
     wb.save('{0}bdmo1_index.xlsx'.format(today))
+    wb_all.save('{0}bdmo1_index_domains.xlsx'.format(today))
 
 
 class bdmoIndexMonitor(threading.Thread):
@@ -88,12 +120,13 @@ class bdmoIndexMonitor(threading.Thread):
     # 初始化结果字典
     @staticmethod
     def result_init(group_list):
-        result = {} 
-        for group in group_list:
-            result[group] = {'首页':0,'总词数':0}
-        print("结果字典init...")
+        result = {}
+        for domain in domains:
+            result[domain] = {}
+            for group in group_list:
+                result[domain][group] = {'首页':0,'总词数':0}
+            print("结果字典init...")
         return result
-
 
     # 获取某词serp源码
     def get_html(self,url,retry=2):
@@ -202,13 +235,12 @@ class bdmoIndexMonitor(threading.Thread):
                 q.task_done()
                 
 
-
 if __name__ == "__main__":
     start = time.time()
     local_time = time.localtime()
     today = time.strftime('%Y%m%d',local_time)
-    domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com']
-    domain = '5i5j.com'
+    domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
+    my_domain = '5i5j.com' # 自己域名
     my_header = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
@@ -222,7 +254,7 @@ if __name__ == "__main__":
         'Upgrade-Insecure-Requests': '1',
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1'}
     q,group_list = bdmoIndexMonitor.read_excel('kwd_core_city.xlsx')  # 关键词队列及分类
-    result = bdmoIndexMonitor.result_init(group_list)  # 结果字典
+    result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")
     f_all = open('{0}bdmo1_index_all.txt'.format(today),'w',encoding="utf-8")
@@ -235,16 +267,11 @@ if __name__ == "__main__":
     q.join()
     f.close()
     f_all.close()
-    # 根据bdmo1_index_info.txt数据计算结果
+    # 根据bdmo1_index_info.txt计算结果
     result_last = get_result(file_path,result)
     # 写入txt文件
-    with open('{0}bdmo1_index.txt'.format(today), 'w', encoding="utf-8") as f_res:
-        for group,dict_value in result_last.items():
-            f_res.write(group + '\t')
-            for key,value in dict_value.items():
-                f_res.write(str(value) + '\t')
-            f_res.write('\n')
-    end = time.time()
+    write_domains_txt(result_last)
     # 写入excel
-    write_excel(group_list,result_last,today)
-    print('关键词共{0}个,成功个数看page5_info.txt,耗时{1}min'.format(all_num, (end - start) / 60))
+    write_myexcel(group_list,result_last,today,my_domain)
+    end = time.time()
+    print('关键词共{0}个,耗时{1}min'.format(all_num, (end - start) / 60))

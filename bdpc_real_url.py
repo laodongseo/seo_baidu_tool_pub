@@ -1,9 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-采集百度pc首页排名的真实url
+采集百度pc首页排名的真实url,包含自然排名和非自然排名
 准备kwd.txt,一行一个词
-线程数自己设,默认2
-cookie要用自己账号登陆后的cookie
+线程数自己设,默认1
+要加自己账号登陆后的cookie
 """
 import requests
 from pyquery import PyQuery as pq
@@ -44,22 +44,36 @@ class BdpcRealUrl(threading.Thread):
     # 获取某待查询url的serp源码所有排名url
     def get_encrpt_urls(self,html,url):
         encrypt_url_list = []
+        real_urls = []
         doc = pq(html)
         title = doc('title').text()
         if '_百度搜索' in title and 'https://www.baidu.com/s?ie=utf-8' in url:
-            try:
-                a_list = doc('.t a').items()
-            except Exception as e:
-                print('未提取到serp上的解密url', e)
-            else:
-                for a in a_list:
-                    encrypt_url = a.attr('href')
-                    if encrypt_url.find('http://www.baidu.com/link?url=') == 0:
+            div_list = doc('.result').items() # 自然排名
+            div_op_list = doc('.result-op').items() # 非自然排名
+            for div in div_list:
+                rank = div.attr('id')
+                if rank:
+                    try:
+                        a = div('h3 a')
+                    except Exception as e:
+                        print('未提取自然排名加密链接')
+                    else:
+                        encrypt_url = a.attr('href')
                         encrypt_url_list.append(encrypt_url)
+            for div in div_op_list:
+                rank = div.attr('id')
+                if rank:
+                    link = div.attr('mu') # 真实url,有些op样式没有mu属性
+                    if link: 
+                        real_urls.append(link)
+                    else:
+                        encrypt_url = div('article a').attr('href')
+                        encrypt_url_list.append(encrypt_url)
+
         else:
-            print(title,'源码异常,可能反爬')
-            time.sleep(100)
-        return encrypt_url_list
+            print('源码异常,可能反爬')
+            time.sleep(60)
+        return encrypt_url_list,real_urls
 
     # 解密某条加密url
     def decrypt_url(self,encrypt_url,retry=1):
@@ -75,7 +89,7 @@ class BdpcRealUrl(threading.Thread):
                 self.decrypt_url(encrypt_url,retry-1)
         else:
             real_url = r.headers['Location']
-        return real_url
+            return real_url
 
     # 获取结果页真实url
     def get_real_urls(self, encrypt_url_list):
@@ -93,8 +107,9 @@ class BdpcRealUrl(threading.Thread):
             url = "https://www.baidu.com/s?ie=utf-8&rsv_bp=1&tn=87048150_dg&wd={0}".format(kwd)
             try:
                 html,now_url = self.get_html(url)
-                encrypt_url_list = self.get_encrpt_urls(html,now_url)
-                real_urls = self.get_real_urls(encrypt_url_list)
+                encrypt_url_list,real_urls = self.get_encrpt_urls(html,now_url)
+                real_urls_qita = self.get_real_urls(encrypt_url_list)
+                real_urls.extend(real_urls_qita)
             except Exception as e:
                 print(e)
             else:
@@ -106,20 +121,29 @@ class BdpcRealUrl(threading.Thread):
                 del kwd
                 gc.collect()
                 q.task_done()
+                exit()
 
 
 if __name__ == "__main__":
 
     start = time.time()
     my_header = {
-        'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36',
-        'Cookie':'BIDUPSID=EB1F44AB7896D7EFA4F0FD243C29FF17; PSTM=1567562976; BAIDUID=EB1F44AB7896D7EFA4F0FD243C29FF17:SL=0:NR=10:FG=1; BDUSS=BZWlZuSXpNWmNjM3BTSktnM2xhbGhIdUlqeW1ITEdvclpzSHpIS3p2WUMwc2hkRVFBQUFBJCQAAAAAAAAAAAEAAAAGtiZkNzcyNDgzMjAwZG9uZwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJFoV0CRaFdeF; plus_cv=1::m:49a3f4a6; MSA_WH=400_655; lsv=globalTjs_3a11c3d-globalT_androidcss_4630b37-wwwT_androidcss_c5f9a54-searchboxcss_591d86b-globalBcss_aad48cc-wwwBcss_777000e-framejs_c9ac861-atomentryjs_5cd4b30-globalBjs_99ad350-wwwjs_b674808; BD_UPN=19314353; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; BDICON=10294984.98; delPer=0; BD_CK_SAM=1; rsv_i=c2b6G%2F3avQC%2FfgLjK6Tg5dByzXJGjTHszykjx0XgYlZZgizi3%2F9wOVrzCucTWKLxPYYUs%2BqPpygizpeQMUWhVScLKRxzaaw; FEED_SIDS=732051_1030_14; plus_lsv=f197ee21ffd230fd; Hm_lvt_12423ecbc0e2ca965d84259063d35238=1572225355,1572415847,1572418912; Hm_lpvt_12423ecbc0e2ca965d84259063d35238=1572418912; BAIDULOC=12966109.384666294_4841881.341700486_100_131_1572418911981; SE_LAUNCH=5%3A26206981_0%3A26206981; BDPASSGATE=IlPT2AEptyoA_yiU4VKH3kIN8efjWvW4AfvESkplQFStfCaWmhH3BrUzWz0HSieXBDP6wZTXdMsDxXTqXlVXa_EqnBsZolpOaSaXzKGoucHtVM69-t5yILXoHUE2sA8PbRhL-3MEF2ZELlQvcgjchQZrchW8z3JTpxz1z5Xocc0T1UKR2VLJxJyTS7xvRHvcPNuz94rXnEpKKSmBUADHRVjYcSQyWXkD5NOtjsAm1Q0WrkoXGurSRvAa1G8vJpFeXAio1fWU60ul269v5HViViwh9UOI7u46MnJZ; H_WISE_SIDS=137151_137734_137755_136649_137663_137071_128070_134982_136665_120196_136768_137002_137788_136366_132909_136456_137690_135847_131246_137746_132378_136681_118893_118876_118846_118827_118802_132782_136800_136431_136093_133352_136862_137089_129652_136194_124637_137105_137572_133847_132551_137468_134046_129646_131423_137212_137466_136034_110085_127969_137613_131951_136611_137252_128196_137696_136636_137767_137207_134347_134231_137618_137449; kleck=638cabc3ad33a7a082343c4553a47c42; BDRCVFR[x4e6higC8W6]=mk3SLVN4HKm; PSINO=7; H_PS_PSSID=1440_21084_20697_29567_29220; sug=3; sugstore=0; ORIGIN=0; bdime=0; H_PS_645EC=db34IWhem1lYO7OwXVBPbsx2yQuIu3jmqGT9FUp09TItjsTj8omDTLnov6%2BIZQe6dqc',
+        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
+        'Cache-Control':'max-age=0',
+        'Connection':'keep-alive',
+        'Cookie':'BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; NOJS=1; BD_UPN=12314353; MSA_WH=414_736; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; H_WISE_SIDS=141144_139203_139419_139403_137831_114177_135846_141000_139148_120169_139864_140833_133995_138878_137979_140173_131247_132552_141261_118880_118865_118839_118832_118793_138165_107317_138883_140260_141367_141410_139046_140202_140592_138585_139174_139624_140114_136196_131861_140591_133847_140792_140065_140545_131423_140823_138663_136537_141103_110085_140325_127969_140622_140595_140864_139802_137252_139408_127417_138312_138425_141193_138944_140685_141190_140596_140964; SE_LAUNCH=5%3A26323611_0%3A26323611; uc_login_unique=6bf49fd83dac5615e84a46c7a074358a; uc_recom_mark=cmVjb21tYXJrXzExMjgyMTQ5; delPer=0; BD_CK_SAM=1; H_PS_PSSID=; sug=0; sugstore=0; ORIGIN=0; bdime=20100; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03295031977; PSINO=3; BDRCVFR[xoix5KwSHTc]=mk3SLVN4HKm; H_PS_645EC=4ab6F6VIt%2BYkr06wgh3RIrIwQ%2Fal4E2RHKvDXYvs9ojMQEhw8q4h1OJUVxdAvNcvWuSdmLAiss89; BDSVRTM=184; COOKIE_SESSION=6_0_4_8_3_15_0_1_3_5_0_2_6777_1579491493_0_0_1579422695_0_1579491512%7C9%23349315_47_1579491172%7C9',
         'Host':'www.baidu.com',
-        'Upgrade-Insecure-Requests':'1'}
+        'Referer':'https://www.hao123.com/?tn=48020221_28_hao_pg',
+        'Sec-Fetch-Mode':'navigate',
+        'Sec-Fetch-Site':'same-origin',
+        'Sec-Fetch-User':'?1',
+        'Upgrade-Insecure-Requests':'1',
+        'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36'}
     q = BdpcRealUrl.read_txt('kwd.txt') 
     f = open('bdpc_real_url.txt','w+',encoding='utf-8')
     # 设置线程数
-    for i in list(range(2)):
+    for i in list(range(1)):
         t = BdpcRealUrl()
         t.setDaemon(True)
         t.start()

@@ -1,8 +1,8 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-采集百度pc首页排名的真实url,包含自然排名和非自然排名
+采集百度pc首页排名的真实url
 准备kwd.txt,一行一个词
-线程数自己设,默认1
+线程数自己设,默认2
 要加自己账号登陆后的cookie
 """
 import requests
@@ -89,7 +89,7 @@ class BdpcRealUrl(threading.Thread):
                 self.decrypt_url(encrypt_url,retry-1)
         else:
             real_url = r.headers['Location']
-            return real_url
+        return real_url
 
     # 获取结果页真实url
     def get_real_urls(self, encrypt_url_list):

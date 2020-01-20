@@ -107,10 +107,7 @@ class bdpcIndexMonitor(threading.Thread):
                 kwd = (cell.value)
                 # 加个判断吧
                 if kwd:
-                    kwd_z = kwd+ '租房'
-                    kwd_er = kwd + '二手房'
-                    q.put([sheet_name,kwd_z])
-                    q.put([sheet_name,kwd_er])
+                    q.put([sheet_name,kwd])
         return q, group_list
 
     # 初始化结果字典
@@ -128,7 +125,7 @@ class bdpcIndexMonitor(threading.Thread):
     # 获取某词serp源码
     def get_html(self,url,retry=2):
         try:
-            r = requests.get(url=url,headers=user_agent,timeout=5)
+            r = requests.get(url=url,headers=my_header,timeout=5)
         except Exception as e:
             print('获取源码失败',e)
             time.sleep(6)
@@ -145,7 +142,7 @@ class bdpcIndexMonitor(threading.Thread):
         real_urls = []
         doc = pq(html)
         title = doc('title').text()
-        if '_百度搜索' in title and 'https://www.baidu.com/s?tn=48020221' in url:
+        if '_百度搜索' in title and 'https://www.baidu.com/s?ie=utf-8' in url:
             div_list = doc('.result').items() # 自然排名
             div_op_list = doc('.result-op').items() # 非自然排名
             for div in div_list:
@@ -159,14 +156,15 @@ class bdpcIndexMonitor(threading.Thread):
                         encrypt_url = a.attr('href')
                         encrypt_url_list.append((encrypt_url,rank))
             for div in div_op_list:
-                rank = div.attr('id')
-                if rank:
+                rank_op = div.attr('id')
+                if rank_op:
                     link = div.attr('mu') # 真实url,有些op样式没有mu属性
+                    # print(link,rank_op)
                     if link: 
-                        real_urls.append((link,rank))
+                        real_urls.append((link,rank_op))
                     else:
                         encrypt_url = div('article a').attr('href')
-                        encrypt_url_list.append((encrypt_url,rank))
+                        encrypt_url_list.append((encrypt_url,rank_op))
 
         else:
             print('源码异常,可能反爬')
@@ -181,7 +179,7 @@ class bdpcIndexMonitor(threading.Thread):
         try:
             encrypt_url = encrypt_url.replace('http://','https://')
             # print(encrypt_url)
-            r = requests.head(encrypt_url,headers=user_agent)
+            r = requests.head(encrypt_url,headers=my_header)
         except Exception as e:
             print(encrypt_url,'解密失败',e)
             time.sleep(6)
@@ -226,7 +224,7 @@ class bdpcIndexMonitor(threading.Thread):
             group,kwd = group_kwd
             print(group,kwd)
             try:
-                url = "https://www.baidu.com/s?tn=48020221_28_hao_pg&ie=utf-8&wd={0}".format(kwd)
+                url = "https://www.baidu.com/s?ie=utf-8&rsv_bp=1&tn=87048150_dg&wd={0}".format(kwd)
                 html,now_url = self.get_html(url)
                 encrypt_url_list_rank,real_urls_rank = self.get_encrpt_urls(html,now_url)
                 # 源码ok再写入
@@ -250,6 +248,7 @@ class bdpcIndexMonitor(threading.Thread):
                                     print(my_url, my_order)
                                     break # 取第一个排名url
                 f.flush()
+                f_all.flush()
             except Exception as e:
                 print(e)
             finally:
@@ -264,22 +263,20 @@ if __name__ == "__main__":
     today = time.strftime('%Y%m%d',local_time)
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
     my_domain = '5i5j.com'
-    user_agent = {
-        'Accept':'*/*',
+    my_header = {
+        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
         'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
+        'Cache-Control':'max-age=0',
         'Connection':'keep-alive',
-        'Cookie':'BAIDUID=58EC9CED3D297D51D7F907D6A9A39A0D:FG=1; H_WISE_SIDS=141143_139453_139402_138497_128070_135846_139148_120212_138471_139862_139193_137758_138878_137978_140173_131247_132552_137749_118891_118869_118852_118826_118797_136687_107312_138883_140260_136430_140631_139296_136863_138148_140120_139178_139624_140077_140113_136196_131861_137104_140591_139520_139693_138585_133847_140793_137734_140066_134046_131424_138511_140717_140384_136413_140355_110085_140983_140327_127969_140286_140794_140593_140865_139884_127416_138313_139908_138426_139733_139912_138942_140683_139926_140597_140231_140962; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; BIDUPSID=58EC9CED3D297D51D7F907D6A9A39A0D; PSTM=1578883637; H_PS_PSSID=1438_21087; BD_UPN=13314352; plus_cv=1::m:49a3f4a6; BDRCVFR[gltLrB7qNCt]=mk3SLVN4HKm; delPer=0; BD_CK_SAM=1; PSINO=3; BDUSS=mJOeUQyRGJGU3RRODNoVm1qUjB3Y0I0MHdRazNPZTN1NlU4SURCQkZEYmF6VU5lRVFBQUFBJCQAAAAAAAAAAAEAAAA0WpD1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANpAHF7aQBxeQ; H_PS_645EC=5b74qHRT7kKmZiTMsbrmw%2BeNiLhqY0c0KNEP09Ho5BjYvMl61Y%2Frhrfy4s4aRYRRrUmK',
+        'Cookie':'BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; NOJS=1; BD_UPN=12314353; MSA_WH=414_736; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; H_WISE_SIDS=141144_139203_139419_139403_137831_114177_135846_141000_139148_120169_139864_140833_133995_138878_137979_140173_131247_132552_141261_118880_118865_118839_118832_118793_138165_107317_138883_140260_141367_141410_139046_140202_140592_138585_139174_139624_140114_136196_131861_140591_133847_140792_140065_140545_131423_140823_138663_136537_141103_110085_140325_127969_140622_140595_140864_139802_137252_139408_127417_138312_138425_141193_138944_140685_141190_140596_140964; SE_LAUNCH=5%3A26323611_0%3A26323611; uc_login_unique=6bf49fd83dac5615e84a46c7a074358a; uc_recom_mark=cmVjb21tYXJrXzExMjgyMTQ5; delPer=0; BD_CK_SAM=1; H_PS_PSSID=; sug=0; sugstore=0; ORIGIN=0; bdime=20100; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03295031977; PSINO=3; BDRCVFR[xoix5KwSHTc]=mk3SLVN4HKm; H_PS_645EC=4ab6F6VIt%2BYkr06wgh3RIrIwQ%2Fal4E2RHKvDXYvs9ojMQEhw8q4h1OJUVxdAvNcvWuSdmLAiss89; BDSVRTM=184; COOKIE_SESSION=6_0_4_8_3_15_0_1_3_5_0_2_6777_1579491493_0_0_1579422695_0_1579491512%7C9%23349315_47_1579491172%7C9',
         'Host':'www.baidu.com',
-        'is_pbs':'%E6%BD%98%E5%AE%B6%E5%9B%AD%E7%A7%9F%E6%88%BF',
-        'is_referer':'https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&srcqid=3833744943805315907&tn=48020221_28_hao_pg&wd=%E6%BD%98%E5%AE%B6%E5%9B%AD%E7%A7%9F%E6%88%BF&oq=%25E7%2599%25BE%25E5%25BA%25A6%25E5%25B0%258F%25E7%25A8%258B%25E5%25BA%258F&rsv_pq=98fe30970002450f&rsv_t=ff987BDF4HNxewRNnD0J0IHEjAr2JGmenR3cES7G3tERQyXdVPrFj7HpbIvPQPr%2F%2FD%2Fb39%2B3XY0V&rqlang=cn&rsv_enter=1&rsv_dl=tb&bs=%E7%99%BE%E5%BA%A6%E5%B0%8F%E7%A8%8B%E5%BA%8F',
-        'is_xhr':'1',
-        'Referer':'https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&srcqid=3833744943805315907&tn=48020221_28_hao_pg&wd=%E6%BD%98%E5%AE%B6%E5%9B%AD%E7%A7%9F%E6%88%BF&oq=%25E6%25BD%2598%25E5%25AE%25B6%25E5%259B%25AD%25E7%25A7%259F%25E6%2588%25BF&rsv_pq=8f0a80e4000480a5&rsv_t=efdbqWItlJg2MB8gBlIwFy%2FPBDDDtjZW5wKBsdggRTkAy1h9oX9I%2BUlSQCabHfUCgfgYkVJuOsqo&rqlang=cn&rsv_enter=0&rsv_dl=tb',
-        'Sec-Fetch-Mode':'cors',
+        'Referer':'https://www.hao123.com/?tn=48020221_28_hao_pg',
+        'Sec-Fetch-Mode':'navigate',
         'Sec-Fetch-Site':'same-origin',
-        'User-Agent':'Mozilla/5.0(WindowsNT6.1;Win64;x64)AppleWebKit/537.36(KHTML,likeGecko)Chrome/79.0.3945.117Safari/537.36',
-        'X-Requested-With':'XMLHttpRequest',
-    }
-    q,group_list = bdpcIndexMonitor.read_excel('kwd_core_city.xlsx')  # 关键词队列及分类
+        'Sec-Fetch-User':'?1',
+        'Upgrade-Insecure-Requests':'1',
+        'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36'}
+    q,group_list = bdpcIndexMonitor.read_excel('2020kwd_core_city.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize() # 总词数

@@ -2,7 +2,7 @@
 """
 功能:
    1)指定域名,分关键词种类监控首页词数
-   2)提取serp所有url,提取域名并统计各域名首页覆盖率-单写脚本完成
+   2)采集serp所有url,提取域名并统计各域名首页覆盖率
 提示:
   1)相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合.视频全部算在内
     所以首页排名有可能大于10
@@ -11,7 +11,7 @@
   3)kwd_core_city.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
-    bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率
+    bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成
     bdmo1_index.xlsx:自己站每类词首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
     cookie必须是登录baidu账号后的cookie否则很容易被反爬
@@ -111,7 +111,10 @@ class bdmoIndexMonitor(threading.Thread):
                 kwd = (cell.value)
                 # 加个判断吧
                 if kwd:
-                    q.put([sheet_name,kwd])
+                    kwd_z = kwd+ '租房'
+                    kwd_er = kwd + '二手房'
+                    q.put([sheet_name,kwd_z])
+                    q.put([sheet_name,kwd_er])
         return q, group_list
 
     # 初始化结果字典

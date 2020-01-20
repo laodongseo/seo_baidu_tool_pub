@@ -111,10 +111,7 @@ class bdmoIndexMonitor(threading.Thread):
                 kwd = (cell.value)
                 # 加个判断吧
                 if kwd:
-                    kwd_z = kwd+ '租房'
-                    kwd_er = kwd + '二手房'
-                    q.put([sheet_name,kwd_z])
-                    q.put([sheet_name,kwd_er])
+                    q.put([sheet_name,kwd])
         return q, group_list
 
     # 初始化结果字典

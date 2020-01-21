@@ -13,8 +13,9 @@
     bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成
     bdmo1_index.xlsx:自己站每类词首页词数
+    bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
-    cookie必须是登录baidu账号后的cookie否则很容易被反爬
+cookie必须是登录baidu账号后的cookie否则很容易被反爬
 
 """
 
@@ -122,7 +123,7 @@ class bdmoIndexMonitor(threading.Thread):
             result[domain] = {}
             for group in group_list:
                 result[domain][group] = {'首页':0,'总词数':0}
-            print("结果字典init...")
+        print("结果字典init...")
         return result
 
     # 获取某词serp源码
@@ -215,6 +216,7 @@ class bdmoIndexMonitor(threading.Thread):
                         f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,my_attr,group))
                     f_all.flush()
                     domain_str = self.get_domains(real_urls)
+                    # 目标站点是否出现
                     for domain in domains:
                         if domain not in domain_str:
                               f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group,domain))
@@ -222,6 +224,7 @@ class bdmoIndexMonitor(threading.Thread):
                             for my_url,my_order,my_attr in real_urls_rank:
                                 if domain in my_url:
                                     f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,group,domain))
+                                    print(my_url, my_order)
                                     break # 取第一个排名url
                 f.flush()
             except Exception as e:
@@ -250,7 +253,7 @@ if __name__ == "__main__":
         'Sec-Fetch-User': '?1',
         'Upgrade-Insecure-Requests': '1',
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1'}
-    q,group_list = bdmoIndexMonitor.read_excel('kwd_core_city.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_core_city.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")

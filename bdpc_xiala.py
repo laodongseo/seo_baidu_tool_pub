@@ -3,7 +3,7 @@
 提取百度pc下拉词
 准备kwd.txt,一行一个
 下拉接口抓包获取,目前返回的事json数据
-默认线程数2,请求头的cookie用你自己登陆账号后的cookie
+默认线程数1,请求头的cookie用你自己登陆账号后的cookie
 """
 import requests
 import threading

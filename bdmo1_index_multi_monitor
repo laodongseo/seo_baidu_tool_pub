@@ -3,6 +3,7 @@
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)采集serp所有url,提取域名并统计各域名首页覆盖率
+   3)3)采集了serp上的排名url特征srcid值
 提示:
   1)相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合.视频全部算在内
     所以首页排名有可能大于10
@@ -107,10 +108,11 @@ def request_js(url,my_header,retry=1):
 def get_header():
     my_header = {
         'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-'Accept-Encoding':'gzip, deflate, br',
+'Accept-Encoding':'deflate',
 'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
+'Cache-Control':'max-age=0',
 'Connection':'keep-alive',
-'Cookie':'wpr=0; BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; MSA_WH=414_736; plus_lsv=f197ee21ffd230fd; plus_cv=1::m:49a3f4a6; MSA_ZOOM=1056; MSA_PBT=146; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03334703244; BDICON=10123156; ysm=10557; H_PS_PSSID=; delPer=0; ZD_ENTRY=empty; COOKIE_SESSION=0_0_0_1_1_t1_6_1_5_0_0_1_26_1583460283%7C1%230_0_0_0_0_0_0_0_1583460283%7C1; FC_MODEL=-1_1_14_0_10.29_1_1_0_1_0_14019.9_-1_8_30_3_56_0_1583474305197_1583460283879%7C9%2310.29_-1_-1_8_3_1583474305197_1583460283879%7C9; BDRCVFR[xoix5KwSHTc]=9xWipS8B-FspA7EnHc1QhPEUf; PSINO=3; H_WISE_SIDS=142067_141000_142950_142081_142207_142112_135846_139203_142019_141837_139046_143162_139863_142514_138878_140989_141900_142397_142780_142285_136862_131861_140174_131247_137745_138165_140325_138883_133847_140259_141942_127969_142871_140065_142991_140593_143059_140421_138426_141009_141191_143274_141925_131423_143291_143218_107319_142345_138595_142271_141102_110085; rsv_i=3870JCHIamBV41%2B1dDZPc85WIlCaFMUkV9g7PhVSSStJRQNGmPFcpOq9LTYmGf3UHAJnJK4SM3bT5Whv2cWtJQomeuYw2Qc; FEED_SIDS=345657_0306_18; BDSVRTM=348; Hm_lvt_12423ecbc0e2ca965d84259063d35238=1583144998,1583287307,1583460278,1583490172; Hm_lpvt_12423ecbc0e2ca965d84259063d35238=1583490172; ___rl__test__cookies=1583490172869; OUTFOX_SEARCH_USER_ID_NCOO=137211498.87397498; BDSVRBFE=Go; SE_LAUNCH=5%3A26391502_14%3A26391502; __bsi=8768075164353227953_00_12_N_R_8_0303_c02f_Y',
+'Cookie':'BAIDUID=5C83CA320794E5C258FA4910682AD919:FG=1; H_WISE_SIDS=141920_143076_142060_142507_114552_142075_142081_133333_142205_142112_142018_142357_140632_143162_140191_142580_139173_143341_142780_136863_131247_142909_137745_138165_138883_141941_127969_140065_143368_140593_143058_141807_131953_138425_141009_143471_143276_141930_131423_107314_138595_143093_139882_143478_142426_140368_141103_110085; rsv_i=82f9p88mPGASBRSouAxiUd1pLfIpkVHJgXF5P2KLbX2SZoCknNs9UySnPXEM44r5eKvbJJiW9ywlcM3FZfLIboUwEHcAhE4; plus_lsv=f197ee21ffd230fd; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; SE_LAUNCH=5%3A26407241; BDICON=10123156; delPer=0; BDORZ=SFH; ASUV=1.2.126; wpr=1; MSA_WH=375_667; MSA_PBT=146; MSA_ZOOM=1056; PSINO=2; ysm=10557|10557; FC_MODEL=-1_0_0_0_0_0_0_0_0_0_0_-1_0_0_0_0_0_1584434567486_1584434557910%7C2%230_-1_-1_0_0_1584434567486_1584434557910%7C2; COOKIE_SESSION=10_0_0_3_0_p1_0_0_0_0_0_0_0_1584434567%7C3%230_0_0_0_0_0_0_0_1584434526%7C1; __bsi=7947394741705739639_00_3_R_R_81_0303_c02f_Y; BDSVRBFE=Go',
 'Host':'m.baidu.com',
 'Referer':'https://m.baidu.com/',
 'Sec-Fetch-Dest':'document',
@@ -138,7 +140,7 @@ class bdmoIndexMonitor(threading.Thread):
             sheet_name = sheet_obj.title
             group_list.append(sheet_name)
             kwd_dict[sheet_name]= []
-            col_a = sheet_obj['B']
+            col_a = sheet_obj['A']
             for cell in col_a:
                 kwd = (cell.value)
                 # 加个判断吧
@@ -186,31 +188,26 @@ class bdmoIndexMonitor(threading.Thread):
             else:
                 pass
         else:
-            print('源码异常----------',title)
-            time.sleep(300)
+            print('源码异常---------------------',title)
+            time.sleep(120)
         return div_list
 
     # 提取排名的真实url
     def get_real_urls(self, div_list):
         real_urls_rank = []
         if div_list:
-            try:
-                for div in div_list:
-                    data_log = div.attr('data-log')
-                    data_log = json.loads(data_log.replace("'", '"')) # json字符串双引号
-                    srcid = data_log['ensrcid'] if 'ensrcid' in data_log  else 'ensrcid' # 样式特征
-                    rank_url = data_log['mu'] if 'mu' in data_log else '' # mu为空或不存在
-                    rank = data_log['order']
-                    if rank_url:
-                        real_urls_rank.append((rank_url,rank,srcid))
-                    else:
-                        article = div('.c-result-content article')
-                        link = article.attr('rl-link-href')
-                        real_urls_rank.append((link,rank,srcid))
-            except Exception as e:
-                print(e,'提取rank_url error')
-            else:
-                pass        
+            for div in div_list:
+                data_log = div.attr('data-log')
+                data_log = json.loads(data_log.replace("'", '"')) # json字符串双引号
+                srcid = data_log['ensrcid'] if 'ensrcid' in data_log  else 'ensrcid' # 样式特征
+                rank_url = data_log['mu'] # mu为空或者不存在
+                rank = data_log['order']
+                if rank_url:
+                    real_urls_rank.append((rank_url,rank,srcid))
+                else:
+                    article = div('.c-result-content article')
+                    link = article.attr('rl-link-href')
+                    real_urls_rank.append((link,rank,srcid))
         return real_urls_rank
 
     # 提取某url的域名部分
@@ -219,7 +216,7 @@ class bdmoIndexMonitor(threading.Thread):
         try:
            res = urlparse(real_url)
         except Exception as e:
-           print(e,'real_url:error')
+           print (e,real_url)
         else:
            domain = res.netloc
         return domain
@@ -263,17 +260,16 @@ class bdmoIndexMonitor(threading.Thread):
                         else:
                             for my_url,my_order,my_attr in real_urls_rank:
                                 if domain in my_url:
-                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,group,domain))
+                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,my_url,my_order,group,domain,my_attr))
                                     print(my_url, my_order)
                                     break # 取第一个排名url
                 f.flush()
             except Exception as e:
-                print(e,'error')
+                print(e)
             finally:
                 del kwd
                 gc.collect()
                 q.task_done()
-                # exit()
                 time.sleep(0.5)
                 
 
@@ -283,7 +279,7 @@ if __name__ == "__main__":
     today = time.strftime('%Y%m%d',local_time)
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
     my_domain = '5i5j.com' # 自己域名
-    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new - 副本.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")

@@ -1,8 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
 功能:
-   1)指定域名,分关键词种类监控首页词数
+   1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
+   3)通过tpl属性记录serp排名url的特征
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
@@ -26,6 +27,7 @@ from openpyxl import load_workbook
 from openpyxl import Workbook
 import time
 import gc
+import random
 
 
 # 计算最终结果
@@ -86,6 +88,38 @@ def write_myexcel(group_list, result_last, today,my_domain):
     wb.save('{0}bdpc1_index.xlsx'.format(today))
     wb_all.save('{0}bdpc1_index_domains.xlsx'.format(today))
 
+# 发js包-不用
+def request_js(url,my_header,retry=1):
+    try:
+        r = requests.get(url=url,headers=my_header,timeout=2)
+    except Exception as e:
+        print('获取源码失败',e)
+        time.sleep(6)
+        if retry > 0:
+            request_js(url,retry-1)
+    else:
+        pass
+
+# 随机header
+def get_header():
+    my_header = {
+       'Accept':'*/*',
+'Accept-Encoding':'deflate',
+'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
+'Connection':'keep-alive',
+'Cookie':'BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; NOJS=1; BD_UPN=12314353; MSA_WH=375_667; plus_cv=1::m:49a3f4a6; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03346812488; sug=0; sugstore=1; ORIGIN=0; bdime=20100; H_WISE_SIDS=142112_139203_142067_142950_142081_143858_143378_142207_142018_139046_141748_143162_139174_141900_142780_131861_131247_142910_137745_138165_138883_140259_141942_127969_142871_140065_140593_143059_143492_140421_140351_138426_143469_143274_141925_131423_143291_107319_138596_143478_142426_143548_141102_110085; SE_LAUNCH=5%3A26411218_14%3A26411218; BDPASSGATE=IlPT2AEptyoA_yiU4V_43kIN8enzTri4H4PISkpT36ePdCyWmhHWAb-IXjLOUZa8AiTM-Y3fo_-zd5fCQjpfjKMThgMAfztqfFe6xqe25aTvL_NgzbIZCbDJOFkpzPXqav26z4wh1wRW4C9vfOHJpuo4ivKl73JQb4rc6VL2a_zXAlqR2WmJxlmEOolmO-0APNu594rXnEpZKS_3APHyRi8ybVciEHwL-d_JkPwn0AzWq6oY0RuiZMExGI8mFppi_x3nBQOLkKaoEV55qysc; delPer=0; plus_lsv=f197ee21ffd230fd; Hm_lvt_12423ecbc0e2ca965d84259063d35238=1584588657,1584673642; Hm_lpvt_12423ecbc0e2ca965d84259063d35238=1584673642; rsv_i=52bcip%2BJ%2FKmI4bqoAkkOPJcB3Nk%2FjG%2BlUkQYsHKWibQ%2BH5SJFuvfl1ZmHGTxMH7GrsT39%2FOW7uLdm%2BEuAmNGsRwN5AzOORY; BD_CK_SAM=1; H_PS_PSSID=; PSINO=7; BDSVRTM=0; COOKIE_SESSION=12154_0_7_4_4_13_0_2_6_4_5_7_74493_0_14_0_1584683552_0_1584683538%7C9%237079_45_1579498251%7C9',
+'Host':'www.baidu.com',
+'is_pbs':'%E5%8D%81%E9%87%8C%E6%B2%B3%E7%A7%9F%E6%88%BF',
+'is_referer':'https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&srcqid=4032677742191786819&tn=48020221_28_hao_pg&wd=%E5%8D%81%E9%87%8C%E6%B2%B3%E7%A7%9F%E6%88%BF&oq=%25E7%2594%25B0%25E5%25AE%25B6%25E5%259B%25AD%25E4%25BA%258C%25E5%258C%25BA&rsv_pq=944e2c990000ea83&rsv_t=6a14oB%2B6BV0nuktdpszHaj4tK3piV1HoqNxtd16zA3YsO2TEUvUaOsJZ9VleWR8QJ32vgnmnvmrB&rqlang=cn&rsv_enter=1&rsv_dl=tb&bs=%E7%94%B0%E5%AE%B6%E5%9B%AD%E4%BA%8C%E5%8C%BA',
+'is_xhr':'1',
+'Referer':'https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&srcqid=4032677742191786819&tn=48020221_28_hao_pg&wd=%E5%8D%81%E9%87%8C%E6%B2%B3%E7%A7%9F%E6%88%BF&oq=%25E7%2594%25B0%25E5%25AE%25B6%25E5%259B%25AD%25E4%25BA%258C%25E5%258C%25BA&rsv_pq=944e2c990000ea83&rsv_t=6a14oB%2B6BV0nuktdpszHaj4tK3piV1HoqNxtd16zA3YsO2TEUvUaOsJZ9VleWR8QJ32vgnmnvmrB&rqlang=cn&rsv_enter=1&rsv_dl=tb&rsv_sug2=0&inputT=3854&rsv_sug4=4433',
+'Sec-Fetch-Dest':'empty',
+'Sec-Fetch-Mode':'cors',
+'Sec-Fetch-Site':'same-origin',
+'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36',
+'X-Requested-With':'XMLHttpRequest',}
+    return my_header
+
 
 class bdpcIndexMonitor(threading.Thread):
 
@@ -123,20 +157,20 @@ class bdpcIndexMonitor(threading.Thread):
 
 
     # 获取某词serp源码
-    def get_html(self,url,retry=2):
+    def get_html(self,url,my_header,retry=1):
         try:
             r = requests.get(url=url,headers=my_header,timeout=5)
         except Exception as e:
             print('获取源码失败',e)
             time.sleep(6)
             if retry > 0:
-                self.get_html(url,retry-1)
+                self.get_html(url,my_header,retry-1)
         else:
             html = r.content.decode('utf-8',errors='ignore')  # 用r.text有时候识别错误
             url = r.url  # 反爬会重定向,取定向后的地址
             return html,url
 
-    # 获取某词serp源码上自然排名的所有url
+    # 获取某词serp源码所有url
     def get_encrpt_urls(self,html,url):
         encrypt_url_list = []
         real_urls = []
@@ -147,6 +181,7 @@ class bdpcIndexMonitor(threading.Thread):
             div_op_list = doc('.result-op').items() # 非自然排名
             for div in div_list:
                 rank = div.attr('id')
+                tpl = div.attr('tpl') if div.attr('tpl') else 'xxx'
                 if rank:
                     try:
                         a = div('h3 a')
@@ -154,17 +189,19 @@ class bdpcIndexMonitor(threading.Thread):
                         print('未提取自然排名加密链接')
                     else:
                         encrypt_url = a.attr('href')
-                        encrypt_url_list.append((encrypt_url,rank))
+                        encrypt_url_list.append((encrypt_url,rank,tpl))
             for div in div_op_list:
                 rank_op = div.attr('id')
+                tpl = div.attr('tpl')
+                tpl = div.attr('tpl') if div.attr('tpl') else 'xxx'
                 if rank_op:
                     link = div.attr('mu') # 真实url,有些op样式没有mu属性
                     # print(link,rank_op)
                     if link: 
-                        real_urls.append((link,rank_op))
+                        real_urls.append((link,rank_op,tpl))
                     else:
                         encrypt_url = div('article a').attr('href')
-                        encrypt_url_list.append((encrypt_url,rank_op))
+                        encrypt_url_list.append((encrypt_url,rank_op,tpl))
 
         else:
             print('源码异常,可能反爬')
@@ -174,17 +211,16 @@ class bdpcIndexMonitor(threading.Thread):
         return encrypt_url_list,real_urls
 
     # 解密某条加密url
-    def decrypt_url(self,encrypt_url,retry=1):
+    def decrypt_url(self,encrypt_url,my_header,retry=1):
         real_url = None # 默认None
         try:
             encrypt_url = encrypt_url.replace('http://','https://')
-            # print(encrypt_url)
             r = requests.head(encrypt_url,headers=my_header)
         except Exception as e:
             print(encrypt_url,'解密失败',e)
             time.sleep(6)
             if retry > 0:
-                self.decrypt_url(encrypt_url,retry-1)
+                self.decrypt_url(encrypt_url,my_header,retry-1)
         else:
             real_url = r.headers['Location'] if 'Location' in r.headers else None
         return real_url
@@ -225,27 +261,29 @@ class bdpcIndexMonitor(threading.Thread):
             print(group,kwd)
             try:
                 url = "https://www.baidu.com/s?ie=utf-8&rsv_bp=1&tn=87048150_dg&wd={0}".format(kwd)
-                html,now_url = self.get_html(url)
+                my_header = get_header()
+                html,now_url = self.get_html(url,my_header)
                 encrypt_url_list_rank,real_urls_rank = self.get_encrpt_urls(html,now_url)
                 # 源码ok再写入
                 if encrypt_url_list_rank:
-                    for my_serp_url,my_order in encrypt_url_list_rank:
-                        my_real_url = self.decrypt_url(my_serp_url)
-                        real_urls_rank.append((my_real_url,my_order))
+                    for my_serp_url,my_order,tpl in encrypt_url_list_rank:
+                        my_real_url = self.decrypt_url(my_serp_url,my_header)
+                        real_urls_rank.append((my_real_url,my_order,tpl))
                     real_urls = []
-                    for my_real_url,my_order in real_urls_rank:
+                    for my_real_url,my_order,tpl in real_urls_rank:
                         real_urls.append(my_real_url)
-                        f_all.write('{0}\t{1}\t{2}\t{3}\n'.format(kwd,my_real_url,my_order,group))
+                        print(tpl)
+                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_real_url,my_order,tpl,group))
                     domain_str = self.get_domains(real_urls)
                     # 目标站点是否出现
                     for domain in domains:
                         if domain not in domain_str:
                             f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group,domain))
                         else:
-                            for my_url, my_order in real_urls_rank:
+                            for my_url, my_order,tpl in real_urls_rank:
                                 if domain in my_url:
-                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, my_url, my_order, group,domain))
-                                    print(my_url, my_order)
+                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, my_url, my_order, group,domain,tpl))
+                                    # print(my_url, my_order)
                                     break # 取第一个排名url
                 f.flush()
                 f_all.flush()
@@ -263,20 +301,7 @@ if __name__ == "__main__":
     today = time.strftime('%Y%m%d',local_time)
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
     my_domain = '5i5j.com'
-    my_header = {
-        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-        'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
-        'Cache-Control':'max-age=0',
-        'Connection':'keep-alive',
-        'Cookie':'BIDUPSID=95E739A8EE050812705C1FDE2584A61E; PSTM=1563865961; BAIDUID=95E739A8EE050812705C1FDE2584A61E:SL=0:NR=10:FG=1; BDUSS=NMRzZPVUFqR0JtbzJJc1ZDdkx2MGtiQUpvWVNUSjhnSUFmRFRmTnpDdmpGcXhkRVFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOOJhF3jiYRdOU; NOJS=1; BD_UPN=12314353; MSA_WH=414_736; BDORZ=FFFB88E999055A3F8A630C64834BD6D0; H_WISE_SIDS=141144_139203_139419_139403_137831_114177_135846_141000_139148_120169_139864_140833_133995_138878_137979_140173_131247_132552_141261_118880_118865_118839_118832_118793_138165_107317_138883_140260_141367_141410_139046_140202_140592_138585_139174_139624_140114_136196_131861_140591_133847_140792_140065_140545_131423_140823_138663_136537_141103_110085_140325_127969_140622_140595_140864_139802_137252_139408_127417_138312_138425_141193_138944_140685_141190_140596_140964; SE_LAUNCH=5%3A26323611_0%3A26323611; uc_login_unique=6bf49fd83dac5615e84a46c7a074358a; uc_recom_mark=cmVjb21tYXJrXzExMjgyMTQ5; delPer=0; BD_CK_SAM=1; H_PS_PSSID=; sug=0; sugstore=0; ORIGIN=0; bdime=20100; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03295031977; PSINO=3; BDRCVFR[xoix5KwSHTc]=mk3SLVN4HKm; H_PS_645EC=4ab6F6VIt%2BYkr06wgh3RIrIwQ%2Fal4E2RHKvDXYvs9ojMQEhw8q4h1OJUVxdAvNcvWuSdmLAiss89; BDSVRTM=184; COOKIE_SESSION=6_0_4_8_3_15_0_1_3_5_0_2_6777_1579491493_0_0_1579422695_0_1579491512%7C9%23349315_47_1579491172%7C9',
-        'Host':'www.baidu.com',
-        'Referer':'https://www.hao123.com/?tn=48020221_28_hao_pg',
-        'Sec-Fetch-Mode':'navigate',
-        'Sec-Fetch-Site':'same-origin',
-        'Sec-Fetch-User':'?1',
-        'Upgrade-Insecure-Requests':'1',
-        'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36'}
-    q,group_list = bdpcIndexMonitor.read_excel('2020kwd_core_city.xlsx')  # 关键词队列及分类
+    q,group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize() # 总词数

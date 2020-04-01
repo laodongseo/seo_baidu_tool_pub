@@ -9,15 +9,15 @@
     所以首页排名有可能大于10
   2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
     提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
-  3)kwd_core_city.xlsx:sheet名为关键词种类,sheet第一列放关键词
+  3)2020kwd_url_core_city_unique.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成
     bdmo1_index.xlsx:自己站每类词首页词数
     bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
-cookie必须是登录baidu账号后的cookie否则很容易被反爬
-
+header头信息复制浏览器全部的请求头,Accept-Encoding留deflate
+serp上请求头多测几个找到和手动搜索结果最一致的
 """
 
 import requests
@@ -104,23 +104,23 @@ def request_js(url,my_header,retry=1):
     else:
         pass
 
-# 随机header
+# header
 def get_header():
     my_header = {
-        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+    'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
 'Accept-Encoding':'deflate',
 'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
-'Cache-Control':'max-age=0',
 'Connection':'keep-alive',
-'Cookie':'BAIDUID=5C83CA320794E5C258FA4910682AD919:FG=1; H_WISE_SIDS=141920_143076_142060_142507_114552_142075_142081_133333_142205_142112_142018_142357_140632_143162_140191_142580_139173_143341_142780_136863_131247_142909_137745_138165_138883_141941_127969_140065_143368_140593_143058_141807_131953_138425_141009_143471_143276_141930_131423_107314_138595_143093_139882_143478_142426_140368_141103_110085; rsv_i=82f9p88mPGASBRSouAxiUd1pLfIpkVHJgXF5P2KLbX2SZoCknNs9UySnPXEM44r5eKvbJJiW9ywlcM3FZfLIboUwEHcAhE4; plus_lsv=f197ee21ffd230fd; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; SE_LAUNCH=5%3A26407241; BDICON=10123156; delPer=0; BDORZ=SFH; ASUV=1.2.126; wpr=1; MSA_WH=375_667; MSA_PBT=146; MSA_ZOOM=1056; PSINO=2; ysm=10557|10557; FC_MODEL=-1_0_0_0_0_0_0_0_0_0_0_-1_0_0_0_0_0_1584434567486_1584434557910%7C2%230_-1_-1_0_0_1584434567486_1584434557910%7C2; COOKIE_SESSION=10_0_0_3_0_p1_0_0_0_0_0_0_0_1584434567%7C3%230_0_0_0_0_0_0_0_1584434526%7C1; __bsi=7947394741705739639_00_3_R_R_81_0303_c02f_Y; BDSVRBFE=Go',
+'Cookie':'BAIDUID=30B55DCC0F6C644DAE785329B0021624:FG=1; H_WISE_SIDS=143805_142209_144239_144368_143858_140843_143647_142529_142115_143879_141875_141744_143162_143423_144419_141901_142779_144483_131861_131247_137743_138883_140259_141942_127969_140066_140593_143060_141808_140350_143470_143923_131423_144289_144219_144499_107315_138595_139882_144106_144306_143477_138662_143289_144098_110085; rsv_i=62d7AookMhmFNdnmCGNykSsTjrf7m1CXH85ExZAY6xGVTMs0BgR2RXnY%2FNy%2FHLOGnP58%2FdPWW04SwpLRl7q6RNWmT8w9XYw; plus_lsv=f197ee21ffd230fd; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; SE_LAUNCH=5%3A26427460; BDICON=10123156; delPer=0; PSINO=1; ysm=10557; BDORZ=SFH; ASUV=1.2.126; MSA_WH=375_667; MSA_PBT=146; MSA_ZOOM=1056; __bsi=11795431577904345926_00_6_R_R_18_0303_c02f_Y; COOKIE_SESSION=0_0_0_1_1_t1_4_1_1_0_0_1_13_1585647623%7C1%230_0_0_0_0_0_0_0_1585647623%7C1; FC_MODEL=0_0_0_0_4.71_0_0_0_0_0_25.9_0_1_4_0_5_0_0_1585647623453%7C1%234.71_0_0_1_0_0_1585647623453%7C1; wpr=0',
 'Host':'m.baidu.com',
-'Referer':'https://m.baidu.com/',
+'Referer':'https://m.baidu.com/s?word=%E6%88%91%E7%88%B1%E6%88%91%E5%AE%B6&sa=tb&ts=6903973&t_kt=0&ie=utf-8&rsv_t=68f5PxNgvP6G1jrSRrLrRdw2qksT%252FPAljBltu0jCxkRgkAaxqMH1&rsv_pq=9155941158555653753&sugid=1598903438430932543&ss=100&rqlang=zh&rsv_sug4=3093&inputT=1277&oq=%E7%8E%8B%E5%A4%A7%E4%BC%9F',
 'Sec-Fetch-Dest':'document',
 'Sec-Fetch-Mode':'navigate',
 'Sec-Fetch-Site':'same-origin',
 'Sec-Fetch-User':'?1',
 'Upgrade-Insecure-Requests':'1',
-'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',}
+'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+        }
     return my_header
 
 

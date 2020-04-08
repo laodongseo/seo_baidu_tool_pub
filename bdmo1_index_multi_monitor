@@ -9,7 +9,7 @@
     所以首页排名有可能大于10
   2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
     提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
-  3)2020kwd_url_core_city_unique.xlsx:sheet名为关键词种类,sheet第一列放关键词
+  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成
@@ -107,20 +107,19 @@ def request_js(url,my_header,retry=1):
 # header
 def get_header():
     my_header = {
-    'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
 'Accept-Encoding':'deflate',
 'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
 'Connection':'keep-alive',
-'Cookie':'BAIDUID=30B55DCC0F6C644DAE785329B0021624:FG=1; H_WISE_SIDS=143805_142209_144239_144368_143858_140843_143647_142529_142115_143879_141875_141744_143162_143423_144419_141901_142779_144483_131861_131247_137743_138883_140259_141942_127969_140066_140593_143060_141808_140350_143470_143923_131423_144289_144219_144499_107315_138595_139882_144106_144306_143477_138662_143289_144098_110085; rsv_i=62d7AookMhmFNdnmCGNykSsTjrf7m1CXH85ExZAY6xGVTMs0BgR2RXnY%2FNy%2FHLOGnP58%2FdPWW04SwpLRl7q6RNWmT8w9XYw; plus_lsv=f197ee21ffd230fd; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; SE_LAUNCH=5%3A26427460; BDICON=10123156; delPer=0; PSINO=1; ysm=10557; BDORZ=SFH; ASUV=1.2.126; MSA_WH=375_667; MSA_PBT=146; MSA_ZOOM=1056; __bsi=11795431577904345926_00_6_R_R_18_0303_c02f_Y; COOKIE_SESSION=0_0_0_1_1_t1_4_1_1_0_0_1_13_1585647623%7C1%230_0_0_0_0_0_0_0_1585647623%7C1; FC_MODEL=0_0_0_0_4.71_0_0_0_0_0_25.9_0_1_4_0_5_0_0_1585647623453%7C1%234.71_0_0_1_0_0_1585647623453%7C1; wpr=0',
+'Cookie':'BAIDUID=37FCAAF5D648E0711E309F8540077D88:FG=1; rsv_i=4e33rWhl3H8kDLpUQheFJORT9bSgG0wuT49kjkxFnUjpzanxKMCXjYlnz%2BFTvj6vjm%2FmN1UO23aSjMX9J4CT8WcGwdq4xQs; H_WISE_SIDS=144291_143857_142210_141182_143877_139561_141554_144018_144238_142113_100807_142019_140632_141748_143161_142513_144419_139177_141901_142779_131247_142909_137743_138165_138883_141941_127969_144171_140066_143996_140593_143060_141808_140351_138425_143468_143922_131423_144290_125579_107317_131114_138595_144106_140974_143478_144351_110085; plus_lsv=f197ee21ffd230fd; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; SE_LAUNCH=5%3A26421710; BDICON=10123156; delPer=0; BDORZ=SFH; COOKIE_SESSION=0_0_0_1_0_t1_2_0_0_0_0_0_0_1585302665%7C1%230_0_0_0_0_0_0_0_1585302665%7C1; ASUV=1.2.126; MSA_WH=375_667; MSA_PBT=146; MSA_ZOOM=1056; ysm=10557|10557; wpr=1; PSINO=1; FC_MODEL=-1_0_0_0_0_0_0_0_0_0_0_-1_0_2_0_0_0_1585302685087_1585302671786%7C2%230_-1_-1_0_0_1585302685087_1585302671786%7C2; __bsi=7666732909910344945_00_7_R_R_7_0303_c02f_Y',
 'Host':'m.baidu.com',
-'Referer':'https://m.baidu.com/s?word=%E6%88%91%E7%88%B1%E6%88%91%E5%AE%B6&sa=tb&ts=6903973&t_kt=0&ie=utf-8&rsv_t=68f5PxNgvP6G1jrSRrLrRdw2qksT%252FPAljBltu0jCxkRgkAaxqMH1&rsv_pq=9155941158555653753&sugid=1598903438430932543&ss=100&rqlang=zh&rsv_sug4=3093&inputT=1277&oq=%E7%8E%8B%E5%A4%A7%E4%BC%9F',
+'Referer':'https://m.baidu.com/s?word=%E7%99%BE%E5%BA%A6&sa=tb&ts=2685013&t_kt=0&ie=utf-8&rsv_t=b9f1Qp3UIatvOupGwRd63XEFXcBnJGiZrlPbANUPGcs6cIrktxUD&rsv_pq=8634325497540052698&ss=&rqlang=zh&oq=%E7%99%BE%E5%BA%A6',
 'Sec-Fetch-Dest':'document',
 'Sec-Fetch-Mode':'navigate',
 'Sec-Fetch-Site':'same-origin',
 'Sec-Fetch-User':'?1',
 'Upgrade-Insecure-Requests':'1',
-'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
-        }
+'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',}
     return my_header
 
 
@@ -140,7 +139,7 @@ class bdmoIndexMonitor(threading.Thread):
             sheet_name = sheet_obj.title
             group_list.append(sheet_name)
             kwd_dict[sheet_name]= []
-            col_a = sheet_obj['A']
+            col_a = sheet_obj['B']
             for cell in col_a:
                 kwd = (cell.value)
                 # 加个判断吧
@@ -178,7 +177,7 @@ class bdmoIndexMonitor(threading.Thread):
         div_list = []
         doc = pq(html)
         title = doc('title').text()
-        if '- 百度' in title and 'https://m.baidu.com/s?ie=utf-8' in url:
+        if '- 百度' in title and 'https://m.baidu.com/s?ts=0' in url:
             try:
                 div_list = doc('.c-result').items()
                 # 如果mu为空,.c-result-content header a会有数据,这类数据样式特别,比如资讯聚合
@@ -188,26 +187,31 @@ class bdmoIndexMonitor(threading.Thread):
             else:
                 pass
         else:
-            print('源码异常---------------------',title)
-            time.sleep(120)
+            print('源码异常------',title)
+            time.sleep(300)
         return div_list
 
     # 提取排名的真实url
     def get_real_urls(self, div_list):
         real_urls_rank = []
         if div_list:
-            for div in div_list:
-                data_log = div.attr('data-log')
-                data_log = json.loads(data_log.replace("'", '"')) # json字符串双引号
-                srcid = data_log['ensrcid'] if 'ensrcid' in data_log  else 'ensrcid' # 样式特征
-                rank_url = data_log['mu'] # mu为空或者不存在
-                rank = data_log['order']
-                if rank_url:
-                    real_urls_rank.append((rank_url,rank,srcid))
-                else:
-                    article = div('.c-result-content article')
-                    link = article.attr('rl-link-href')
-                    real_urls_rank.append((link,rank,srcid))
+            try:
+                for div in div_list:
+                    data_log = div.attr('data-log')
+                    data_log = json.loads(data_log.replace("'", '"')) # json字符串双引号
+                    srcid = data_log['ensrcid'] if 'ensrcid' in data_log  else 'ensrcid' # 样式特征
+                    rank_url = data_log['mu'] if 'mu' in data_log else '' # mu为空或不存在
+                    rank = data_log['order']
+                    if rank_url:
+                        real_urls_rank.append((rank_url,rank,srcid))
+                    else:
+                        article = div('.c-result-content article')
+                        link = article.attr('rl-link-href')
+                        real_urls_rank.append((link,rank,srcid))
+            except Exception as e:
+                print(e,'提取rank_url error')
+            else:
+                pass        
         return real_urls_rank
 
     # 提取某url的域名部分
@@ -216,7 +220,7 @@ class bdmoIndexMonitor(threading.Thread):
         try:
            res = urlparse(real_url)
         except Exception as e:
-           print (e,real_url)
+           print(e,'real_url:error')
         else:
            domain = res.netloc
         return domain
@@ -238,7 +242,7 @@ class bdmoIndexMonitor(threading.Thread):
             group,kwd = group_kwd
             print(group,kwd)
             try:
-                url = "https://m.baidu.com/s?ie=utf-8&word={0}".format(kwd)
+                url = "https://m.baidu.com/s?ts=0&t_kt=0&ie=utf-8&word={0}".format(kwd)
                 # js_url = js_url.format(kwd,kwd)
                 my_header = get_header()
                 # request_js(js_url,my_header)
@@ -265,11 +269,12 @@ class bdmoIndexMonitor(threading.Thread):
                                     break # 取第一个排名url
                 f.flush()
             except Exception as e:
-                print(e)
+                print(e,'error')
             finally:
                 del kwd
                 gc.collect()
                 q.task_done()
+                # exit()
                 time.sleep(0.5)
                 
 
@@ -279,7 +284,7 @@ if __name__ == "__main__":
     today = time.strftime('%Y%m%d',local_time)
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
     my_domain = '5i5j.com' # 自己域名
-    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")

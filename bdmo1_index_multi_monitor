@@ -93,33 +93,36 @@ def write_myexcel(group_list, result_last, today,my_domain):
     wb_all.save('{0}bdmo1_index_domains.xlsx'.format(today))
 
 # 发js包-不用
-def request_js(url,my_header,retry=1):
-    try:
-        r = requests.get(url=url,headers=my_header,timeout=2)
-    except Exception as e:
-        print('获取源码失败',e)
-        time.sleep(6)
-        if retry > 0:
-            request_js(url,retry-1)
-    else:
-        pass
+# def request_js(url,my_header,retry=1):
+#     try:
+#         r = requests.get(url=url,headers=my_header,timeout=2)
+#     except Exception as e:
+#         print('获取源码失败',e)
+#         time.sleep(6)
+#         if retry > 0:
+#             request_js(url,retry-1)
+#     else:
+#         pass
 
 # header
 def get_header():
     my_header = {
-        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+    'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
 'Accept-Encoding':'deflate',
 'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
+'Cache-Control':'no-cache',
 'Connection':'keep-alive',
-'Cookie':'BAIDUID=37FCAAF5D648E0711E309F8540077D88:FG=1; rsv_i=4e33rWhl3H8kDLpUQheFJORT9bSgG0wuT49kjkxFnUjpzanxKMCXjYlnz%2BFTvj6vjm%2FmN1UO23aSjMX9J4CT8WcGwdq4xQs; H_WISE_SIDS=144291_143857_142210_141182_143877_139561_141554_144018_144238_142113_100807_142019_140632_141748_143161_142513_144419_139177_141901_142779_131247_142909_137743_138165_138883_141941_127969_144171_140066_143996_140593_143060_141808_140351_138425_143468_143922_131423_144290_125579_107317_131114_138595_144106_140974_143478_144351_110085; plus_lsv=f197ee21ffd230fd; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; SE_LAUNCH=5%3A26421710; BDICON=10123156; delPer=0; BDORZ=SFH; COOKIE_SESSION=0_0_0_1_0_t1_2_0_0_0_0_0_0_1585302665%7C1%230_0_0_0_0_0_0_0_1585302665%7C1; ASUV=1.2.126; MSA_WH=375_667; MSA_PBT=146; MSA_ZOOM=1056; ysm=10557|10557; wpr=1; PSINO=1; FC_MODEL=-1_0_0_0_0_0_0_0_0_0_0_-1_0_2_0_0_0_1585302685087_1585302671786%7C2%230_-1_-1_0_0_1585302685087_1585302671786%7C2; __bsi=7666732909910344945_00_7_R_R_7_0303_c02f_Y',
-'Host':'m.baidu.com',
-'Referer':'https://m.baidu.com/s?word=%E7%99%BE%E5%BA%A6&sa=tb&ts=2685013&t_kt=0&ie=utf-8&rsv_t=b9f1Qp3UIatvOupGwRd63XEFXcBnJGiZrlPbANUPGcs6cIrktxUD&rsv_pq=8634325497540052698&ss=&rqlang=zh&oq=%E7%99%BE%E5%BA%A6',
+'Cookie':'wpr=0; BAIDUID=5F5BB2BA3DA32555BCFE1CE16DF59737:FG=1; H_WISE_SIDS=145786_142700_144706_142019_144883_145114_141748_145497_145857_144419_144134_145271_144470_144895_144961_131246_144682_137749_144741_138883_141941_127969_140066_144791_144341_140593_144251_144608_131423_128700_142208_144499_107316_144377_139909_139882_143478_144966_142427_140368_145424_142508_145397_143858_110085; rsv_i=c85aDDQ%2F43Y6CuKgqUTKSXAUAlqRhx%2BFtuIsk%2FejhfWSd%2BKJ6ZhDzEXN1ycnF%2FHvwGHZDj0%2F6Kr9ME6Glg5AtNob3SQeOwI; plus_lsv=e1339ee5f098ff6b; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; SE_LAUNCH=5%3A26457737; BDICON=10294984.98; delPer=0; BDSVRTM=46; PSINO=1; ASUV=1.2.126; MSA_WH=375_667; MSA_PBT=146; MSA_ZOOM=1056; COOKIE_SESSION=0_0_0_1_0_t1_8_0_1_0_0_1_0_1587464244%7C1%230_0_0_0_0_0_0_0_1587464244%7C1; FC_MODEL=0_0_0_0_4.54_0_0_0_0_0_7.15_0_0_8_0_1_0_0_1587464244%7C1%234.54_0_0_0_0_0_1587464244%7C1',
+'Host':'www.baidu.com',
+'Pragma':'no-cache',
+'Referer':'https://www.baidu.com/',
 'Sec-Fetch-Dest':'document',
 'Sec-Fetch-Mode':'navigate',
 'Sec-Fetch-Site':'same-origin',
 'Sec-Fetch-User':'?1',
 'Upgrade-Insecure-Requests':'1',
-'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',}
+'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+        }
     return my_header
 
 
@@ -177,7 +180,7 @@ class bdmoIndexMonitor(threading.Thread):
         div_list = []
         doc = pq(html)
         title = doc('title').text()
-        if '- 百度' in title and 'https://m.baidu.com/s?ts=0' in url:
+        if '- 百度' in title and 'https://m.baidu.com/s?ie=utf-8' in url:
             try:
                 div_list = doc('.c-result').items()
                 # 如果mu为空,.c-result-content header a会有数据,这类数据样式特别,比如资讯聚合
@@ -200,7 +203,7 @@ class bdmoIndexMonitor(threading.Thread):
                     data_log = div.attr('data-log')
                     data_log = json.loads(data_log.replace("'", '"')) # json字符串双引号
                     srcid = data_log['ensrcid'] if 'ensrcid' in data_log  else 'ensrcid' # 样式特征
-                    rank_url = data_log['mu'] if 'mu' in data_log else '' # mu为空或不存在
+                    rank_url = data_log['mu']  # mu可能为空或者不存在
                     rank = data_log['order']
                     if rank_url:
                         real_urls_rank.append((rank_url,rank,srcid))
@@ -242,7 +245,7 @@ class bdmoIndexMonitor(threading.Thread):
             group,kwd = group_kwd
             print(group,kwd)
             try:
-                url = "https://m.baidu.com/s?ts=0&t_kt=0&ie=utf-8&word={0}".format(kwd)
+                url = "https://m.baidu.com/s?ie=utf-8&word={0}".format(kwd)
                 # js_url = js_url.format(kwd,kwd)
                 my_header = get_header()
                 # request_js(js_url,my_header)
@@ -265,7 +268,7 @@ class bdmoIndexMonitor(threading.Thread):
                             for my_url,my_order,my_attr in real_urls_rank:
                                 if domain in my_url:
                                     f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,my_url,my_order,group,domain,my_attr))
-                                    print(my_url, my_order)
+                                    # print(my_url, my_order)
                                     break # 取第一个排名url
                 f.flush()
             except Exception as e:

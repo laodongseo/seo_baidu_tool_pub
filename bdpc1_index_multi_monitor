@@ -7,7 +7,7 @@
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
-  3)2020kwd_url_core_city_unique.xlsx:sheet名为关键词种类,sheet第一列放关键词
+  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdpc1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdpc1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本统计
@@ -16,6 +16,7 @@
     bdpc1_index_domains.txt:各监控站点每类词的首页词数
 header头信息复制浏览器全部的请求头,Accept-Encoding留deflate
 serp上请求头多测几个找到和手动搜索结果最一致的
+
 """
 
 import requests
@@ -107,17 +108,19 @@ def get_header():
        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
 'Accept-Encoding':'deflate',
 'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
-'Cache-Control':'max-age=0',
+'Cache-Control':'no-cache',
 'Connection':'keep-alive',
-'Cookie':'BIDUPSID=6212C4C09A207BADC91E3C5206E32430; PSTM=1585645498; BAIDUID=6212C4C09A207BAD7D9587B114BEE9B8:FG=1; BD_HOME=1; BD_UPN=12314353; delPer=0; BD_CK_SAM=1; PSINO=7; H_PS_PSSID=30968_1467_31123_21080_31187_30823_26350; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; COOKIE_SESSION=0_0_1_0_0_1_0_0_0_1_2_0_0_0_0_0_0_0_1585645499%7C1%230_0_1585645499%7C1; H_PS_645EC=ab15oaMS956mhX%2FeILKXhHMlx7LWQy6DgzznRPpjH9xoZHyS9Eyqc0g9Pr0',
+'Cookie':'BIDUPSID=F85975B8C2BE20C8CF7C2910258B6AAB; PSTM=1587465347; BAIDUID=F85975B8C2BE20C81F0639FB4F15217F:FG=1; BD_HOME=1; BD_UPN=12314353; delPer=0; BD_CK_SAM=1; PSINO=1; H_PS_PSSID=30974_1443_31125_21109_31069_31341_30823_26350_31163_31196; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; H_PS_645EC=d43eS%2BEeOoE00584LmGORoxGJ3euKFsJ1YPm8TwUtTgzKksN1rqUhLoCOK4; BDSVRTM=108; COOKIE_SESSION=62_0_2_1_0_1_0_0_1_1_2_0_0_0_0_0_0_0_1587465449%7C3%230_0_1587465449%7C1',
 'Host':'www.baidu.com',
+'Pragma':'no-cache',
 'Sec-Fetch-Dest':'document',
 'Sec-Fetch-Mode':'navigate',
 'Sec-Fetch-Site':'same-origin',
 'Sec-Fetch-User':'?1',
 'Upgrade-Insecure-Requests':'1',
-'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36',}
+'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36',}
     return my_header
+
 
 
 class bdpcIndexMonitor(threading.Thread):
@@ -135,7 +138,7 @@ class bdpcIndexMonitor(threading.Thread):
             sheet_name = sheet_obj.title
             group_list.append(sheet_name)
             kwd_dict[sheet_name]= []
-            col_a = sheet_obj['A']
+            col_a = sheet_obj['B']
             for cell in col_a:
                 kwd = (cell.value)
                 # 加个判断吧
@@ -259,7 +262,7 @@ class bdpcIndexMonitor(threading.Thread):
             group,kwd = group_kwd
             print(group,kwd)
             try:
-                url = "https://www.baidu.com/s?ie=utf-8&rsv_bp=1&tn=87048150_dg&wd={0}".format(kwd)
+                url = "https://www.baidu.com/s?ie=utf-8&rsv_bp=1&wd={0}".format(kwd)
                 my_header = get_header()
                 html,now_url = self.get_html(url,my_header)
                 encrypt_url_list_rank,real_urls_rank = self.get_encrpt_urls(html,now_url)
@@ -271,6 +274,7 @@ class bdpcIndexMonitor(threading.Thread):
                     real_urls = []
                     for my_real_url,my_order,tpl in real_urls_rank:
                         real_urls.append(my_real_url)
+                        # print(tpl)
                         f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_real_url,my_order,tpl,group))
                     domain_str = self.get_domains(real_urls)
                     # 目标站点是否出现
@@ -299,7 +303,7 @@ if __name__ == "__main__":
     today = time.strftime('%Y%m%d',local_time)
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
     my_domain = '5i5j.com'
-    q,group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q,group_list = bdpcIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize() # 总词数

@@ -6,7 +6,7 @@
    3)采集了serp上的排名url特征srcid值
 提示:
   1)相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合.视频全部算在内
-    所以首页排名有可能大于10
+    所以首页排名有可能大于10,未提取多卡片的样式
   2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
     提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
   3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
@@ -112,10 +112,10 @@ def get_header():
 'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
 'Cache-Control':'no-cache',
 'Connection':'keep-alive',
-'Cookie':'BIDUPSID=11788972D7F232B4FF5FE74B56207A36; PSTM=1588743125; BAIDUID=11788972D7F232B44885F321419567C2:FG=1; H_WISE_SIDS=145573_143879_145946_145118_141748_146114_146369_145871_144134_145270_146538_146307_145931_131247_144682_137746_144251_140259_127969_146548_146455_145875_146205_131423_142205_145909_146002_145315_146136_139910_146180_144966_145607_139882_144765_141910_144017_145398_143858_145442_139913_110085_145758; rsv_i=728fiOS%2Fn%2BN8%2FIKi27f%2Bcd%2B2xZNN%2F1fyhmJ1JfKt2Es0Cs7TNopmcZEDIePTAfvRMo60B2QsG8KcaVAoBzzQLQBo8OOeZmw; plus_lsv=e1339ee5f098ff6b; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; SE_LAUNCH=5%3A26479052; BDICON=10123156; delPer=0; PSINO=1; ysm=10557; BDORZ=SFH; ASUV=1.2.126; MSA_WH=375_667; MSA_PHY_WH=750_1334; MSA_PBT=146; MSA_ZOOM=1056; __bsi=9131347695060822089_00_580_R_R_16_0303_c02f_Y; btm=1; COOKIE_SESSION=0_0_0_1_1_w10_3_1_0_0_0_1_8_1588743142%7C1%230_0_0_0_0_0_0_0_1588743142%7C1; FC_MODEL=0_0_0_0_3.41_0_0_0_0_0_10.82_0_1_3_0_5_0_0_1588743142%7C1%233.41_0_0_1_0_0_1588743142%7C1%230_ad_0_0_0_0_63_1588743142; wpr=10',
+'Cookie':'BAIDUID=558A7D8F171B93D12AA4F5EDCAA4F6EC:FG=1; H_WISE_SIDS=146310_147115_146874_143879_144428_145946_146171_146369_145872_147280_146538_146308_131247_144681_146573_140259_146869_127969_144722_146551_146753_142420_146653_131953_146734_146785_131423_128701_142205_145316_125696_107317_146851_140984_139910_146824_144966_145607_144534_143472_132921_145395_146800_139914_110085; rsv_i=5a74Rs2UB4Evpcd%2Ba%2F%2BobJ6XT1nYODr28zb3hmx9AkoI5s9QvDykONyPaBiE5vbveVJFubVtMLssA%2FOOtY4b2hLt4Cc%2FX6Q; plus_lsv=e1339ee5f098ff6b; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; BDICON=10123156; delPer=0; BDORZ=SFH; ASUV=1.2.126; MSA_WH=375_667; MSA_PHY_WH=750_1334; MSA_PBT=146; MSA_ZOOM=1056; SE_LAUNCH=5%3A26496568_22%3A26496568; ysm=10557|10557; PSINO=1; COOKIE_SESSION=56_11_2_2_2_w1_2_4_9_1_0_4_81_1589794287%7C4%230_0_0_0_0_0_0_0_1589794123%7C1; BDSVRBFE=Go; wpr=0; FC_MODEL=0_11_0_0_2.05_1_2_0_1_0_29.43_0_4_2_2_20_0_0_1589794287%7C4%232.05_0_0_4_2_0_1589794287%7C4%230_anmdbc_1_0_0_0_49_1589794287; __bsi=9899597424387391463_00_10_R_R_8_0303_c02f_Y',
 'Host':'m.baidu.com',
 'Pragma':'no-cache',
-'Referer':'https://m.baidu.com/',
+'Referer':'https://m.baidu.com/s?word=%E5%A4%A7%E6%85%A7%E5%AF%BA1%E5%8F%B7&sa=tb&ts=4287062&t_kt=0&ie=utf-8&rsv_t=7efd3MOhWBOws76yzK6cTGZus59K4nP8sgXoHl5v8J5%252Bpby2YhtJ&rsv_pq=9565857742212630760&ss=111&sugid=10195359538280525383&rqlang=zh&rsv_sug4=3116&inputT=984&oq=%E5%85%AB%E9%87%8C%E5%BA%84%E4%B8%9C%E9%87%8C%E5%8C%97%E5%B7%B7',
 'Sec-Fetch-Dest':'document',
 'Sec-Fetch-Mode':'navigate',
 'Sec-Fetch-Site':'same-origin',
@@ -213,10 +213,16 @@ class bdmoIndexMonitor(threading.Thread):
                         # 提取资讯聚合,图片聚合
                         article = div('.c-result-content article')
                         link = article.attr('rl-link-href')
+                        # 提取热议聚合
                         if not link:
-                            # 提取热议聚合
                             a = div('.c-result-content article header a')
-                            link = a.attr('data-sf-href')
+                            data_log_ugc = a.attr('data-log')
+                            data_log_ugc = json.loads(data_log_ugc.replace("'", '"')) # json字符串双引号
+                            link = data_log_ugc['mu']  if 'mu' in data_log_ugc else None # mu可能为空或者不存在
+                            link = 'https://m.baidu.com{0}'.format(link) if link != None else None
+                            # 一般为卡片样式,链接太多,不提取了
+                            if not link:
+                                pass
                         real_urls_rank.append((link,rank,srcid))
         return real_urls_rank
 
@@ -277,6 +283,7 @@ class bdmoIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e,'error')
                 print(real_urls)
+                exit()
             finally:
                 del kwd
                 gc.collect()

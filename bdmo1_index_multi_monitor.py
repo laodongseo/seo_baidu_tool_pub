@@ -283,7 +283,6 @@ class bdmoIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e,'error')
                 print(real_urls)
-                exit()
             finally:
                 del kwd
                 gc.collect()

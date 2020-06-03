@@ -3,7 +3,7 @@
 kwd.txt,一行一个关键词
 采集相关搜索词
 默认线程2
-(cookie用自己登陆账号后的cookie否则很容易被反爬)
+
 """
 import requests
 import threading

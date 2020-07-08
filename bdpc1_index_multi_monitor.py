@@ -30,6 +30,9 @@ from openpyxl import Workbook
 import time
 import gc
 import random
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 # 计算最终结果
@@ -104,21 +107,20 @@ def request_js(url,my_header,retry=1):
 
 # header
 def get_header():
-    my_header = {
-       'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+    my_header = {'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
 'Accept-Encoding':'deflate',
 'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
-'Cache-Control':'no-cache',
+'Cache-Control':'max-age=0',
 'Connection':'keep-alive',
-'Cookie':'BIDUPSID=F85975B8C2BE20C8CF7C2910258B6AAB; PSTM=1587465347; BAIDUID=F85975B8C2BE20C81F0639FB4F15217F:FG=1; BD_HOME=1; BD_UPN=12314353; delPer=0; BD_CK_SAM=1; PSINO=1; H_PS_PSSID=30974_1443_31125_21109_31069_31341_30823_26350_31163_31196; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; H_PS_645EC=d43eS%2BEeOoE00584LmGORoxGJ3euKFsJ1YPm8TwUtTgzKksN1rqUhLoCOK4; BDSVRTM=108; COOKIE_SESSION=62_0_2_1_0_1_0_0_1_1_2_0_0_0_0_0_0_0_1587465449%7C3%230_0_1587465449%7C1',
+'Cookie':'BIDUPSID=A4C6904CF949DCCBD7382CFEF0631A5E; PSTM=1594106538; BAIDUID=A4C6904CF949DCCB306808FE7EFAB5C7:FG=1; BD_HOME=1; BD_UPN=12314353; delPer=0; BD_CK_SAM=1; PSINO=7; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; H_PS_PSSID=32098_1436_31326_32139_31254_32046_32230_31708_32258; H_PS_645EC=2ade5i1SvlOUygUJUPTtcyEz63tb3wCaVCGJCPk5z721Dju%2B07D0gdqWVIc; BDSVRTM=119; COOKIE_SESSION=0_0_1_0_0_3_0_0_0_1_2_0_0_0_0_0_0_0_1594106565%7C1%230_0_1594106565%7C1',
 'Host':'www.baidu.com',
-'Pragma':'no-cache',
 'Sec-Fetch-Dest':'document',
 'Sec-Fetch-Mode':'navigate',
 'Sec-Fetch-Site':'same-origin',
 'Sec-Fetch-User':'?1',
 'Upgrade-Insecure-Requests':'1',
-'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36',}
+'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36',
+       }
     return my_header
 
 
@@ -161,7 +163,7 @@ class bdpcIndexMonitor(threading.Thread):
     # 获取某词serp源码
     def get_html(self,url,my_header,retry=1):
         try:
-            r = requests.get(url=url,headers=my_header,timeout=5)
+            r = requests.get(url=url,headers=my_header,verify=False,timeout=5)
         except Exception as e:
             print('获取源码失败',e)
             time.sleep(6)
@@ -207,7 +209,7 @@ class bdpcIndexMonitor(threading.Thread):
 
         else:
             print('源码异常,可能反爬')
-            print(html)
+            print(title)
             time.sleep(60)
                     
         return encrypt_url_list,real_urls
@@ -220,7 +222,7 @@ class bdpcIndexMonitor(threading.Thread):
             r = requests.head(encrypt_url,headers=my_header)
         except Exception as e:
             print(encrypt_url,'解密失败',e)
-            time.sleep(6)
+            time.sleep(30)
             if retry > 0:
                 self.decrypt_url(encrypt_url,my_header,retry-1)
         else:
@@ -262,7 +264,7 @@ class bdpcIndexMonitor(threading.Thread):
             group,kwd = group_kwd
             print(group,kwd)
             try:
-                url = "https://www.baidu.com/s?ie=utf-8&rsv_bp=1&wd={0}".format(kwd)
+                url = "https://www.baidu.com/s?ie=utf-8&wd={0}".format(kwd)
                 my_header = get_header()
                 html,now_url = self.get_html(url,my_header)
                 encrypt_url_list_rank,real_urls_rank = self.get_encrpt_urls(html,now_url)
@@ -270,6 +272,7 @@ class bdpcIndexMonitor(threading.Thread):
                 if encrypt_url_list_rank:
                     for my_serp_url,my_order,tpl in encrypt_url_list_rank:
                         my_real_url = self.decrypt_url(my_serp_url,my_header)
+                        time.sleep(0.2)
                         real_urls_rank.append((my_real_url,my_order,tpl))
                     real_urls = []
                     for my_real_url,my_order,tpl in real_urls_rank:
@@ -295,6 +298,7 @@ class bdpcIndexMonitor(threading.Thread):
                 del kwd
                 gc.collect()
                 q.task_done()
+                # time.sleep(1.5)
 
 
 if __name__ == "__main__":
@@ -324,5 +328,8 @@ if __name__ == "__main__":
     write_domains_txt(result_last)
     # 写入excel
     write_myexcel(group_list,result_last,today,my_domain)
+    # 统计查询成功的词数
+    with open(file_path,'r',encoding='utf-8') as fp:
+         success = int(sum(1 for x in fp)/len(domains))
     end = time.time()
-    print('关键词共{0}个,耗时{1}min'.format(all_num, (end - start) / 60))
+    print('关键词共{0}个,查询成功{1}个,耗时{2}min'.format(all_num,success,(end - start) / 60))

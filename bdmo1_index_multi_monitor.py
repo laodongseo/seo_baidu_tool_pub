@@ -110,18 +110,18 @@ def get_header():
     'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
 'Accept-Encoding':'deflate',
 'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
-'Cache-Control':'no-cache',
+'Cache-Control':'max-age=0',
 'Connection':'keep-alive',
-'Cookie':'BAIDUID=558A7D8F171B93D12AA4F5EDCAA4F6EC:FG=1; H_WISE_SIDS=146310_147115_146874_143879_144428_145946_146171_146369_145872_147280_146538_146308_131247_144681_146573_140259_146869_127969_144722_146551_146753_142420_146653_131953_146734_146785_131423_128701_142205_145316_125696_107317_146851_140984_139910_146824_144966_145607_144534_143472_132921_145395_146800_139914_110085; rsv_i=5a74Rs2UB4Evpcd%2Ba%2F%2BobJ6XT1nYODr28zb3hmx9AkoI5s9QvDykONyPaBiE5vbveVJFubVtMLssA%2FOOtY4b2hLt4Cc%2FX6Q; plus_lsv=e1339ee5f098ff6b; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; BDICON=10123156; delPer=0; BDORZ=SFH; ASUV=1.2.126; MSA_WH=375_667; MSA_PHY_WH=750_1334; MSA_PBT=146; MSA_ZOOM=1056; SE_LAUNCH=5%3A26496568_22%3A26496568; ysm=10557|10557; PSINO=1; COOKIE_SESSION=56_11_2_2_2_w1_2_4_9_1_0_4_81_1589794287%7C4%230_0_0_0_0_0_0_0_1589794123%7C1; BDSVRBFE=Go; wpr=0; FC_MODEL=0_11_0_0_2.05_1_2_0_1_0_29.43_0_4_2_2_20_0_0_1589794287%7C4%232.05_0_0_4_2_0_1589794287%7C4%230_anmdbc_1_0_0_0_49_1589794287; __bsi=9899597424387391463_00_10_R_R_8_0303_c02f_Y',
+'Cookie':'BAIDUID=37E3E4778B6D89A1959329D105A13A16:FG=1; H_WISE_SIDS=148078_149391_150723_149985_150077_147088_150085_148193_148867_148713_150745_147280_150647_150165_149587_150155_148754_147896_146575_148523_151033_127969_149908_146551_146453_149719_147353_146732_138425_149557_143667_131423_100806_147528_151148_107319_148185_149253_140367_144966_150341_147546_148868_110085; rsv_i=4810ma%2B%2BO%2BXmFDzVk5gkLRtJ2q7oESxO9pg1Hnlq51IETtzPgmCfYgm3%2BNjKTKvFOUTnyXIs%2B6hoOhi7xnNAtxxnibkX8sY; plus_lsv=e1339ee5f098ff6b; BDORZ=AE84CDB3A529C0F8A2B9DCDD1D18B695; plus_cv=1::m:49a3f4a6; bd_af=1; BDICON=10123156; delPer=0; BDORZ=SFH; wpr=0; MSA_WH=375_667; MSA_PHY_WH=750_1334; MSA_PBT=146; MSA_ZOOM=1056; SE_LAUNCH=5%3A26568472_15%3A26568472; ysm=10557|10557; BA_HECTOR=kj094; BDSVRBFE=Go; __bsi=7965975238557868905_00_7_R_R_7_0303_c02f_Y; COOKIE_SESSION=6_0_0_2_0_t3_8_2_1_0_0_2_7_1594108380%7C2%230_0_0_0_0_0_0_0_1594108374%7C1; FC_MODEL=0_0_0_0_2.39_0_0_0_0_0_2.92_0_2_8_0_3_0_0_1594108380%7C2%232.39_0_0_2_0_0_1594108380%7C2%230_ax_0_0_0_0_51_1594108380',
 'Host':'m.baidu.com',
-'Pragma':'no-cache',
-'Referer':'https://m.baidu.com/s?word=%E5%A4%A7%E6%85%A7%E5%AF%BA1%E5%8F%B7&sa=tb&ts=4287062&t_kt=0&ie=utf-8&rsv_t=7efd3MOhWBOws76yzK6cTGZus59K4nP8sgXoHl5v8J5%252Bpby2YhtJ&rsv_pq=9565857742212630760&ss=111&sugid=10195359538280525383&rqlang=zh&rsv_sug4=3116&inputT=984&oq=%E5%85%AB%E9%87%8C%E5%BA%84%E4%B8%9C%E9%87%8C%E5%8C%97%E5%B7%B7',
+'Referer':'https://m.baidu.com/s?word=%E5%8C%97%E4%BA%AC%E7%A7%9F%E6%88%BF&ts=8373610&t_kt=0&ie=utf-8&rsv_iqid=3169232709&rsv_t=466fteG54%252FWirs4NDCgKpXRN1BgWcOiMV3UwnQiZRhplHhY24mR7&sa=ib&rsv_pq=3169232709&rsv_sug4=3694&inputT=2170&sugid=2988971856915527823&ss=100&tj=1',
 'Sec-Fetch-Dest':'document',
 'Sec-Fetch-Mode':'navigate',
 'Sec-Fetch-Site':'same-origin',
 'Sec-Fetch-User':'?1',
 'Upgrade-Insecure-Requests':'1',
-'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',}     
+'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+     }     
     return my_header
 
 
@@ -189,7 +189,7 @@ class bdmoIndexMonitor(threading.Thread):
                 pass
         else:
             print('源码异常------',title)
-            time.sleep(300)
+            time.sleep(360)
         return div_list
 
     # 提取排名的真实url
@@ -288,7 +288,7 @@ class bdmoIndexMonitor(threading.Thread):
                 gc.collect()
                 q.task_done()
                 # exit()
-                time.sleep(0.5)
+                time.sleep(0.2)
                 
 
 if __name__ == "__main__":
@@ -317,5 +317,8 @@ if __name__ == "__main__":
     write_domains_txt(result_last)
     # 写入excel
     write_myexcel(group_list,result_last,today,my_domain)
+    # 统计查询成功的词数
+    with open(file_path,'r',encoding='utf-8') as fp:
+         success = int(sum(1 for x in fp)/len(domains))
     end = time.time()
-    print('关键词共{0}个,耗时{1}min'.format(all_num, (end - start) / 60))
+    print('关键词共{0}个,查询成功{1}个,耗时{2}min'.format(all_num,success,(end - start) / 60))

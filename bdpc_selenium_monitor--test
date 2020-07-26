@@ -262,6 +262,7 @@ class bdpcIndexMonitor(threading.Thread):
 
     # 线程函数
     def run(self):
+        global driver
         while 1:
             group_kwd = q.get()
             group, kwd = group_kwd
@@ -316,6 +317,15 @@ class bdpcIndexMonitor(threading.Thread):
                 f_all.flush()
             except Exception as e:
                 print(e)
+                driver.quit()
+                time.sleep(5)
+                option = Options()
+                option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
+                option.add_argument('disable-infobars')
+                option.add_argument('headless')
+                option.add_experimental_option("prefs", No_Image_loading)
+                driver = webdriver.Chrome(options=option, chrome_options=option)
+
             finally:
                 del kwd
                 gc.collect()
@@ -332,7 +342,7 @@ if __name__ == "__main__":
     option = Options()
     option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
     option.add_argument('disable-infobars')
-    option.add_argument('headless')
+    # option.add_argument('headless')
     js = 'window.scrollBy(0,{0})'.format('document.body.scrollHeight')
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)

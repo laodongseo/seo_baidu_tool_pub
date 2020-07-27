@@ -14,9 +14,6 @@
     bdpc1_index.xlsx:自己站每类词首页词数
     bdpc1_index_domains.xlsx:各监控站点每类词的首页词数
     bdpc1_index_domains.txt:各监控站点每类词的首页词数
-header头信息复制浏览器全部的请求头,Accept-Encoding留deflate
-serp上请求头多测几个找到和手动搜索结果最一致的
-
 """
 
 from pyquery import PyQuery as pq
@@ -146,7 +143,7 @@ class bdpcIndexMonitor(threading.Thread):
             sheet_name = sheet_obj.title
             group_list.append(sheet_name)
             kwd_dict[sheet_name] = []
-            col_a = sheet_obj['B']
+            col_a = sheet_obj['A']
             for cell in col_a:
                 kwd = (cell.value)
                 # 加个判断吧
@@ -279,13 +276,14 @@ class bdpcIndexMonitor(threading.Thread):
                     EC.visibility_of_element_located((By.ID, "su"))
                 )
                 click_js = 'document.getElementById("su").click()'
-                # baidu.click()  # 如果有弹窗覆盖会click失败
+                # baidu.click()  
                 driver.execute_script(click_js) # 点击搜索
-                # 等待首页元素加载
+                # 等待首页元素加载完毕
                 next_page = WebDriverWait(driver, 20).until(
                     EC.visibility_of_element_located((By.ID, "help"))
                 )
-                driver.execute_script(js)
+                # 页面下拉
+                driver.execute_script(js_xiala)
                 html = driver.page_source
                 now_url = driver.current_url
                 encrypt_url_list_rank, real_urls_rank = self.get_encrpt_urls(html, now_url)
@@ -293,7 +291,7 @@ class bdpcIndexMonitor(threading.Thread):
                 if encrypt_url_list_rank:
                     for my_serp_url, my_order, tpl in encrypt_url_list_rank:
                         my_real_url = self.decrypt_url(my_serp_url, my_header)
-                        time.sleep(0.12)
+                        time.sleep(0.05)
                         real_urls_rank.append((my_real_url, my_order, tpl))
                     real_urls = []
                     for my_real_url, my_order, tpl in real_urls_rank:
@@ -318,7 +316,7 @@ class bdpcIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e)
                 driver.quit()
-                time.sleep(5)
+                time.sleep(2)
                 option = Options()
                 option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
                 option.add_argument('disable-infobars')
@@ -342,13 +340,13 @@ if __name__ == "__main__":
     option = Options()
     option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
     option.add_argument('disable-infobars')
-    # option.add_argument('headless')
-    js = 'window.scrollBy(0,{0})'.format('document.body.scrollHeight')
+    option.add_argument('headless')
+    js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight',random.random()/5)
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
     driver = webdriver.Chrome(options=option, chrome_options=option)
 
-    q, group_list = bdpcIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数

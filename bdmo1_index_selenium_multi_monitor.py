@@ -27,6 +27,7 @@ import time
 import gc
 import random
 import requests
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -96,38 +97,15 @@ def write_myexcel(group_list, result_last, today, my_domain):
     wb_all.save('{0}bdpc1_index_domains.xlsx'.format(today))
 
 
-# 发js包-不用
-def request_js(url, my_header, retry=1):
-    try:
-        r = requests.get(url=url, headers=my_header, timeout=2)
-    except Exception as e:
-        print('获取源码失败', e)
-        time.sleep(60)
-        if retry > 0:
-            request_js(url, retry - 1)
-    else:
-        pass
-
-
-# header
-def get_header():
-    my_header = {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-        'Accept-Encoding': 'deflate',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        'Cache-Control': 'max-age=0',
-        'Connection': 'keep-alive',
-        'Cookie': 'BIDUPSID=BFDBA633C37B7FE243ABCB7F0325EE34; PSTM=1595324531; BAIDUID=BFDBA633C37B7FE21151BD36E7E7AAA2:FG=1; BD_UPN=12314353; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; H_PS_PSSID=32292_1460_31670_31254_32348_32046_32230_32116_26350; BDSFRCVID=2LIOJeC626-BeMcrQZ0Kt_0-Q2Kab2QTH6aojj9d_BxJt_8Sg962EG0Ptf8g0Ku-_AH5ogKK0mOTHUAF_2uxOjjg8UtVJeC6EG0Ptf8g0M5; H_BDCLCKID_SF=tJ4f_KDytDvDj6ru5DTHh4I0MU_X5-RLfbrral7F5l8-hCLzL4oY-nDuWG3i-p4jHGCHabjttfjxOKQphP68et0mLl7Z-p4OLKk8_DoN3KJmfbL9bT3v5DumLtAt2-biWbRL2MbdQljP_IoG2Mn8M4bb3qOpBtQmJeTxoUJ25DnJhhCGe4bK-Tr3jH8ftM5; delPer=0; BD_CK_SAM=1; PSINO=1; COOKIE_SESSION=5_0_0_3_0_2_0_0_0_1_0_0_0_0_0_0_0_0_1595324689%7C3%230_1_1595324671%7C1; H_PS_645EC=0faeiI%2FpsTPLwpgOAG5yEE9Gd%2BtIywE8BK9sqW%2FdFVA8YpIolzdG3N6DuQ8',
-        'Host': 'www.baidu.com',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-User': '?1',
-        'Upgrade-Insecure-Requests': '1',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36',
-        }
-    return my_header
-
+def get_driver():
+    option = Options()
+    option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
+    option.add_argument('disable-infobars')
+    option.add_argument('headless')
+    No_Image_loading = {"profile.managed_default_content_settings.images": 2}
+    option.add_experimental_option("prefs", No_Image_loading)
+    driver = webdriver.Chrome(options=option, chrome_options=option)
+    return driver
 
 class bdpcIndexMonitor(threading.Thread):
     def __init__(self):
@@ -162,19 +140,6 @@ class bdpcIndexMonitor(threading.Thread):
         print("结果字典init...")
         return result
 
-    # 获取某词serp源码
-    def get_html(self, url, my_header, retry=1):
-        try:
-            r = requests.get(url=url, headers=my_header, verify=False, timeout=5)
-        except Exception as e:
-            print('获取源码失败', e)
-            time.sleep(6)
-            if retry > 0:
-                self.get_html(url, my_header, retry - 1)
-        else:
-            html = r.content.decode('utf-8', errors='ignore')  # 用r.text有时候识别错误
-            url = r.url  # 反爬会重定向,取定向后的地址
-            return html, url
 
     # 获取某词serp源码所有url
     def get_encrpt_urls(self, html, url):
@@ -276,7 +241,6 @@ class bdpcIndexMonitor(threading.Thread):
                     EC.visibility_of_element_located((By.ID, "su"))
                 )
                 click_js = 'document.getElementById("su").click()'
-                # baidu.click()  
                 driver.execute_script(click_js) # 点击搜索
                 # 等待首页元素加载完毕
                 next_page = WebDriverWait(driver, 20).until(
@@ -316,13 +280,10 @@ class bdpcIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e)
                 driver.quit()
-                time.sleep(2)
-                option = Options()
-                option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
-                option.add_argument('disable-infobars')
-                option.add_argument('headless')
-                option.add_experimental_option("prefs", No_Image_loading)
-                driver = webdriver.Chrome(options=option, chrome_options=option)
+                os.system('taskkill /im chromedriver.exe /F')
+                os.system('taskkill /im chrome.exe /F')
+                time.sleep(1)
+                driver = get_driver()
 
             finally:
                 del kwd
@@ -337,16 +298,10 @@ if __name__ == "__main__":
     today = time.strftime('%Y%m%d', local_time)
     domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com']  # 目标域名
     my_domain = '5i5j.com'
-    option = Options()
-    option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
-    option.add_argument('disable-infobars')
-    option.add_argument('headless')
+    driver = get_driver()
     js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight',random.random()/5)
-    No_Image_loading = {"profile.managed_default_content_settings.images": 2}
-    option.add_experimental_option("prefs", No_Image_loading)
-    driver = webdriver.Chrome(options=option, chrome_options=option)
 
-    q, group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('linshi.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数

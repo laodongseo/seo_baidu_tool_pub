@@ -7,7 +7,7 @@
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
-  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列(A列)放关键词
+  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdpc1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdpc1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本统计
@@ -33,6 +33,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 requests.packages.urllib3.disable_warnings()
 
@@ -98,14 +99,36 @@ def write_myexcel(group_list, result_last, today, my_domain):
 
 
 def get_driver():
+    c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
+    c_service.command_line_args()
+    c_service.start()
     option = Options()
     option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
     option.add_argument('disable-infobars')
     option.add_argument('headless')
+    option.add_argument('log-level=3') #屏蔽日志
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
     driver = webdriver.Chrome(options=option, chrome_options=option)
-    return driver
+    return driver,c_service
+
+def get_header():
+    my_header = {'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Accept-Encoding':'deflate',
+        'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
+        'Cache-Control':'max-age=0',
+        'Connection':'keep-alive',
+        'Cookie':'BIDUPSID=BFDBA633C37B7FE243ABCB7F0325EE34; PSTM=1595324531; BAIDUID=BFDBA633C37B7FE21151BD36E7E7AAA2:FG=1; BD_UPN=12314353; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; H_PS_PSSID=32292_1460_31670_31254_32348_32046_32230_32116_26350; BDSFRCVID=2LIOJeC626-BeMcrQZ0Kt_0-Q2Kab2QTH6aojj9d_BxJt_8Sg962EG0Ptf8g0Ku-_AH5ogKK0mOTHUAF_2uxOjjg8UtVJeC6EG0Ptf8g0M5; H_BDCLCKID_SF=tJ4f_KDytDvDj6ru5DTHh4I0MU_X5-RLfbrral7F5l8-hCLzL4oY-nDuWG3i-p4jHGCHabjttfjxOKQphP68et0mLl7Z-p4OLKk8_DoN3KJmfbL9bT3v5DumLtAt2-biWbRL2MbdQljP_IoG2Mn8M4bb3qOpBtQmJeTxoUJ25DnJhhCGe4bK-Tr3jH8ftM5; delPer=0; BD_CK_SAM=1; PSINO=1; COOKIE_SESSION=5_0_0_3_0_2_0_0_0_1_0_0_0_0_0_0_0_0_1595324689%7C3%230_1_1595324671%7C1; H_PS_645EC=0faeiI%2FpsTPLwpgOAG5yEE9Gd%2BtIywE8BK9sqW%2FdFVA8YpIolzdG3N6DuQ8',
+        'Host':'www.baidu.com',
+        'Sec-Fetch-Dest':'document',
+        'Sec-Fetch-Mode':'navigate',
+        'Sec-Fetch-Site':'same-origin',
+        'Sec-Fetch-User':'?1',
+        'Upgrade-Insecure-Requests':'1',
+        'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36',
+    }
+    return my_header
+
 
 class bdpcIndexMonitor(threading.Thread):
     def __init__(self):
@@ -121,7 +144,7 @@ class bdpcIndexMonitor(threading.Thread):
             sheet_name = sheet_obj.title
             group_list.append(sheet_name)
             kwd_dict[sheet_name] = []
-            col_a = sheet_obj['A']
+            col_a = sheet_obj['B']
             for cell in col_a:
                 kwd = (cell.value)
                 # 加个判断吧
@@ -224,12 +247,12 @@ class bdpcIndexMonitor(threading.Thread):
 
     # 线程函数
     def run(self):
-        global driver
+        global driver,c_service
+        my_header = get_header()
         while 1:
             group_kwd = q.get()
             group, kwd = group_kwd
             print(group, kwd)
-            my_header = get_header()
             try:
                 driver.get('https://www.baidu.com/')
                 input = WebDriverWait(driver, 30).until(
@@ -255,7 +278,7 @@ class bdpcIndexMonitor(threading.Thread):
                 if encrypt_url_list_rank:
                     for my_serp_url, my_order, tpl in encrypt_url_list_rank:
                         my_real_url = self.decrypt_url(my_serp_url, my_header)
-                        time.sleep(0.05)
+                        # time.sleep(0.05)
                         real_urls_rank.append((my_real_url, my_order, tpl))
                     real_urls = []
                     for my_real_url, my_order, tpl in real_urls_rank:
@@ -280,13 +303,12 @@ class bdpcIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e)
                 driver.quit()
-                os.system('taskkill /im chromedriver.exe /F')
-                os.system('taskkill /im chrome.exe /F')
-                time.sleep(1)
-                driver = get_driver()
+                c_service.stop()
+                gc.collect()
+                driver,c_service = get_driver()
 
             finally:
-                del kwd
+                del group_kwd,kwd,group
                 gc.collect()
                 q.task_done()
                 # time.sleep(1.5)
@@ -298,10 +320,10 @@ if __name__ == "__main__":
     today = time.strftime('%Y%m%d', local_time)
     domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com']  # 目标域名
     my_domain = '5i5j.com'
-    driver = get_driver()
+    driver,c_service = get_driver()
     js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight',random.random()/5)
 
-    q, group_list = bdpcIndexMonitor.read_excel('linshi.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数

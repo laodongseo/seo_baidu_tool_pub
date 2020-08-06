@@ -9,7 +9,7 @@
     所以首页排名有可能大于10
   2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
     提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
-  3)2020kwd_url_core_city_unique.xlsx:sheet名为关键词种类,sheet第一列(A列)放关键词
+  3)2020kwd_url_core_city_unique.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成
@@ -38,6 +38,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+
 
 requests.packages.urllib3.disable_warnings()
 
@@ -101,18 +103,26 @@ def write_myexcel(group_list, result_last, today,my_domain):
     wb_all.save('{0}bdmo1_index_domains.xlsx'.format(today))
 
 
-def  get_driver():
+def get_driver():
+    c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
+    c_service.command_line_args()
+    c_service.start()
     option = Options()
     option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
-    option.add_argument('disable-infobars')
+    # option.add_argument('disable-infobars')
+    option.add_argument("--no-sandbox")
+    option.add_argument("--disable-dev-shm-usage")
+    option.add_argument("--disable-gpu")
+    option.add_argument("--disable-features=NetworkService")
+    # option.add_argument("--window-size=1920x1080")
+    option.add_argument("--disable-features=VizDisplayCompositor")
     option.add_argument('headless')
+    option.add_argument('log-level=3') #屏蔽日志
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
-    iphone_ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
-    mobile_emulation = {"deviceMetrics": {"width": 375, "height": 667,'pixelRatio':3},"userAgent": iphone_ua}
-    option.add_experimental_option('mobileEmulation',mobile_emulation)
     option.add_experimental_option("prefs", No_Image_loading)
     driver = webdriver.Chrome(options=option, chrome_options=option)
-    return driver
+    return driver,c_service
+
 
 class bdmoIndexMonitor(threading.Thread):
 
@@ -129,7 +139,7 @@ class bdmoIndexMonitor(threading.Thread):
             sheet_name = sheet_obj.title
             group_list.append(sheet_name)
             kwd_dict[sheet_name]= []
-            col_a = sheet_obj['A']
+            col_a = sheet_obj['B']
             for cell in col_a:
                 kwd = (cell.value)
                 # 加个判断吧
@@ -222,7 +232,7 @@ class bdmoIndexMonitor(threading.Thread):
 
     # 线程函数
     def run(self):
-        global driver
+        global driver,c_service
         while 1:
             group_kwd = q.get()
             group,kwd = group_kwd
@@ -271,10 +281,8 @@ class bdmoIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e)
                 driver.quit()
-                os.system('taskkill /im chromedriver.exe /F')
-                os.system('taskkill /im chrome.exe /F')
-                time.sleep(1)
-                driver = get_driver()
+                c_service.stop()
+                driver,c_service = get_driver()
 
             finally:
                 del kwd
@@ -289,10 +297,10 @@ if __name__ == "__main__":
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
     my_domain = '5i5j.com' # 自己域名
     js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight',random.random())
-    driver = get_driver()
+    driver,c_service = get_driver()
     
     
-    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")
@@ -316,4 +324,4 @@ if __name__ == "__main__":
     with open(file_path,'r',encoding='utf-8') as fp:
          success = int(sum(1 for x in fp)/len(domains))
     end = time.time()
-    print('关键词共{0}个,耗时{1}min'.format(all_num, (end - start) / 60))
+    print('关键词共{0}个,查询成功{1}耗时{2}min'.format(all_num,success, (end - start) / 60))

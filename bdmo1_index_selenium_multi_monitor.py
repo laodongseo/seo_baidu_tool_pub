@@ -139,7 +139,7 @@ class bdmoIndexMonitor(threading.Thread):
             sheet_name = sheet_obj.title
             group_list.append(sheet_name)
             kwd_dict[sheet_name]= []
-            col_a = sheet_obj['B']
+            col_a = sheet_obj['A']
             for cell in col_a:
                 kwd = (cell.value)
                 # 加个判断吧
@@ -242,13 +242,19 @@ class bdmoIndexMonitor(threading.Thread):
                 input = WebDriverWait(driver, 30).until(
                     EC.visibility_of_element_located((By.ID, "index-kw"))
                 )
+
+                input_click_js = 'document.getElementById("index-kw").click()'
+                driver.execute_script(input_click_js) # 点击输入框
+
                 input_js = 'document.getElementById("index-kw").value="{0}"'.format(kwd)
                 driver.execute_script(input_js) # 输入搜索词
+                
                 baidu = WebDriverWait(driver, 20).until(
                     EC.visibility_of_element_located((By.ID, "index-bn"))
                 )
                 click_js = 'document.getElementById("index-bn").click()'
                 driver.execute_script(click_js) # 点击搜索
+
                 # 等待首页元素加载完毕
                 bottom = WebDriverWait(driver, 20).until(
                     EC.visibility_of_element_located((By.ID, "copyright"))
@@ -300,7 +306,7 @@ if __name__ == "__main__":
     driver,c_service = get_driver()
     
     
-    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")

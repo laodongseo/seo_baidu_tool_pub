@@ -7,7 +7,7 @@
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
-  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列A列放关键词
+  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdpc1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdpc1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本统计
@@ -210,7 +210,7 @@ class bdpcIndexMonitor(threading.Thread):
             r = requests.head(encrypt_url, headers=my_header)
         except Exception as e:
             print(encrypt_url, '解密失败', e)
-            time.sleep(30)
+            time.sleep(60)
             if retry > 0:
                 self.decrypt_url(encrypt_url, my_header, retry - 1)
         else:

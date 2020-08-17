@@ -15,7 +15,7 @@
     bdpc1_index_domains.xlsx:各监控站点每类词的首页词数
     bdpc1_index_domains.txt:各监控站点每类词的首页词数
     
-selenium驱动浏览器的方式 默认为无头模式
+selenium驱动浏览器的方式 默认为无头模式 selenium不能支持长期操作浏览器，为了解决该问题代码检测抛出异常就重启
 """
 
 from pyquery import PyQuery as pq
@@ -318,7 +318,7 @@ class bdpcIndexMonitor(threading.Thread):
                 f_all.flush()
             except Exception as e:
                 print(e)
-                q.put(group_kwd)
+                # q.put(group_kwd)
                 driver.quit()
                 c_service.stop()
                 gc.collect()

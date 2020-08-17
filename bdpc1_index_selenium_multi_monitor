@@ -14,6 +14,8 @@
     bdpc1_index.xlsx:自己站每类词首页词数
     bdpc1_index_domains.xlsx:各监控站点每类词的首页词数
     bdpc1_index_domains.txt:各监控站点每类词的首页词数
+    
+selenium驱动浏览器的方式 默认为无头模式
 """
 
 from pyquery import PyQuery as pq
@@ -110,6 +112,14 @@ def get_driver():
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
     driver = webdriver.Chrome(options=option, chrome_options=option)
+    # 屏蔽特征
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => undefined
+    })
+  """
+    })
     return driver,c_service
 
 def get_header():
@@ -308,6 +318,7 @@ class bdpcIndexMonitor(threading.Thread):
                 f_all.flush()
             except Exception as e:
                 print(e)
+                q.put(group_kwd)
                 driver.quit()
                 c_service.stop()
                 gc.collect()

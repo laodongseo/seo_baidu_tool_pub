@@ -16,8 +16,7 @@
     bdmo1_index.xlsx:自己站每类词首页词数
     bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
-header头信息复制浏览器全部的请求头,Accept-Encoding留deflate
-serp上请求头多测几个找到和手动搜索结果最一致的
+selenium驱动浏览器的方式 默认为无头模式
 """
 
 from pyquery import PyQuery as pq

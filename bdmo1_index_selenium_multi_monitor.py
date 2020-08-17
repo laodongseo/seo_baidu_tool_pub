@@ -16,7 +16,7 @@
     bdmo1_index.xlsx:自己站每类词首页词数
     bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
-selenium驱动浏览器的方式 默认为无头模式
+selenium驱动浏览器的方式 默认为无头模式,selenium不能支持上时间运行浏览器，代码采用有异常重启的方式持续
 """
 
 from pyquery import PyQuery as pq

@@ -3,7 +3,6 @@
 必须单线程,1是百度反爬2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 selenium不支持长时间操作浏览器,为了解决该问题代码检测抛出异常就重启
-
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
@@ -18,7 +17,6 @@ selenium不支持长时间操作浏览器,为了解决该问题代码检测抛�
     bdpc1_index.xlsx:自己站每类词首页词数
     bdpc1_index_domains.xlsx:各监控站点每类词的首页词数
     bdpc1_index_domains.txt:各监控站点每类词的首页词数
-
 """
 
 from pyquery import PyQuery as pq
@@ -31,8 +29,8 @@ from openpyxl import Workbook
 import time
 import gc
 import random
-import requests
 import urllib3
+import requests
 import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -40,9 +38,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+import random
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
 
 # 计算最终结果
@@ -115,11 +113,10 @@ def get_driver():
     option.add_argument('disable-infobars')
     option.add_argument("user-agent=" + ua)
     option.add_argument('headless')
-    option.add_argument('log-level=3') #屏蔽日志
+    option.add_argument('log-level=3')  # 屏蔽日志
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
     driver = webdriver.Chrome(options=option, chrome_options=option)
-    # 屏蔽特征
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
     Object.defineProperty(navigator, 'webdriver', {
@@ -127,23 +124,26 @@ def get_driver():
     })
   """
     })
-    return driver,c_service
+    return driver, c_service
 
+
+# 只解密加密url用
 def get_header():
-    my_header = {'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-        'Accept-Encoding':'deflate',
-        'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8',
-        'Cache-Control':'max-age=0',
-        'Connection':'keep-alive',
-        'Cookie':'BIDUPSID=BFDBA633C37B7FE243ABCB7F0325EE34; PSTM=1595324531; BAIDUID=BFDBA633C37B7FE21151BD36E7E7AAA2:FG=1; BD_UPN=12314353; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; H_PS_PSSID=32292_1460_31670_31254_32348_32046_32230_32116_26350; BDSFRCVID=2LIOJeC626-BeMcrQZ0Kt_0-Q2Kab2QTH6aojj9d_BxJt_8Sg962EG0Ptf8g0Ku-_AH5ogKK0mOTHUAF_2uxOjjg8UtVJeC6EG0Ptf8g0M5; H_BDCLCKID_SF=tJ4f_KDytDvDj6ru5DTHh4I0MU_X5-RLfbrral7F5l8-hCLzL4oY-nDuWG3i-p4jHGCHabjttfjxOKQphP68et0mLl7Z-p4OLKk8_DoN3KJmfbL9bT3v5DumLtAt2-biWbRL2MbdQljP_IoG2Mn8M4bb3qOpBtQmJeTxoUJ25DnJhhCGe4bK-Tr3jH8ftM5; delPer=0; BD_CK_SAM=1; PSINO=1; COOKIE_SESSION=5_0_0_3_0_2_0_0_0_1_0_0_0_0_0_0_0_0_1595324689%7C3%230_1_1595324671%7C1; H_PS_645EC=0faeiI%2FpsTPLwpgOAG5yEE9Gd%2BtIywE8BK9sqW%2FdFVA8YpIolzdG3N6DuQ8',
-        'Host':'www.baidu.com',
-        'Sec-Fetch-Dest':'document',
-        'Sec-Fetch-Mode':'navigate',
-        'Sec-Fetch-Site':'same-origin',
-        'Sec-Fetch-User':'?1',
-        'Upgrade-Insecure-Requests':'1',
-        'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36',
-    }
+    my_header = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Accept-Encoding': 'deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Cache-Control': 'max-age=0',
+        'Connection': 'keep-alive',
+        'Cookie': random.choice(list_cookies),
+        'Host': 'www.baidu.com',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': random.choice(list_headers),
+        }
     return my_header
 
 
@@ -180,7 +180,6 @@ class bdpcIndexMonitor(threading.Thread):
         print("结果字典init...")
         return result
 
-
     # 获取某词serp源码所有url
     def get_encrpt_urls(self, html, url):
         encrypt_url_list = []
@@ -189,7 +188,7 @@ class bdpcIndexMonitor(threading.Thread):
         title = doc('title').text()
         if '_百度搜索' in title and 'https://www.baidu.com/' in url:
             div_list = doc('.result').items()  # 自然排名
-            div_op_list = doc('.result-op').items()  # 非自然排名
+            div_op_list = doc('.result-op,.c-container').items()  # 非自然排名
             for div in div_list:
                 rank = div.attr('id')
                 tpl = div.attr('tpl') if div.attr('tpl') else 'xxx'
@@ -214,7 +213,7 @@ class bdpcIndexMonitor(threading.Thread):
                         encrypt_url_list.append((encrypt_url, rank_op, tpl))
 
         else:
-            print('源码异常,可能反爬',title)
+            print('源码异常,可能反爬', title)
             time.sleep(60)
 
         return encrypt_url_list, real_urls
@@ -222,17 +221,19 @@ class bdpcIndexMonitor(threading.Thread):
     # 解密某条加密url
     def decrypt_url(self, encrypt_url, my_header, retry=1):
         real_url = None  # 默认None
-        try:
-            encrypt_url = encrypt_url.replace('http://', 'https://')
-            r = requests.head(encrypt_url, headers=my_header)
-        except Exception as e:
-            print(encrypt_url, '解密失败', e)
-            time.sleep(60)
-            if retry > 0:
-                self.decrypt_url(encrypt_url, my_header, retry - 1)
-        else:
-            real_url = r.headers['Location'] if 'Location' in r.headers else None
+        if encrypt_url:
+            try:
+                encrypt_url = encrypt_url.replace('http://', 'https://')
+                r = requests.head(encrypt_url, headers=my_header)
+            except Exception as e:
+                print(encrypt_url, '解密失败', e)
+                time.sleep(60)
+                if retry > 0:
+                    self.decrypt_url(encrypt_url, my_header, retry - 1)
+            else:
+                real_url = r.headers['Location'] if 'Location' in r.headers else None
         return real_url
+
 
     # 获取某词serp源码首页排名真实url
     def get_real_urls(self, encrypt_url_list):
@@ -245,26 +246,33 @@ class bdpcIndexMonitor(threading.Thread):
     # 提取某url的域名部分
     def get_domain(self, real_url):
         domain = None
-        try:
-            res = urlparse(real_url)
-        except Exception as e:
-            print(e, real_url)
-        else:
-            domain = res.netloc
+        if real_url:
+            try:
+                res = urlparse(real_url)
+            except Exception as e:
+                print(e, 'real_url解析异常', real_url)
+            else:
+                domain = res.netloc # None返回字节数据
         return domain
 
     # 获取某词serp源码首页排名所有域名
     def get_domains(self, real_url_list):
+        domain_str = ''
         domain_list = [self.get_domain(real_url) for real_url in real_url_list]
         # 一个词某域名多个url有排名,计算一次
         domain_set = set(domain_list)
         domain_set.remove(None) if None in domain_set else domain_set
-        domain_str = ','.join(domain_set)
+        try:
+            domain_str = ','.join(domain_set) if domain_set else ''  # 避免domain_list都是None
+        except Exception as e:
+            print(domain_set,e)
+        else:
+            pass
         return domain_str
 
     # 线程函数
     def run(self):
-        global driver,c_service
+        global driver, c_service
         my_header = get_header()
         while 1:
             group_kwd = q.get()
@@ -276,63 +284,63 @@ class bdpcIndexMonitor(threading.Thread):
                     EC.visibility_of_element_located((By.ID, "kw"))
                 )
                 input_click_js = 'document.getElementById("kw").click()'
-                driver.execute_script(input_click_js) # 点击输入框
+                driver.execute_script(input_click_js)  # 点击输入框
 
                 input_js = 'document.getElementById("kw").value="{0}"'.format(kwd)
-                driver.execute_script(input_js) # 输入搜索词
+                driver.execute_script(input_js)  # 输入搜索词
 
                 baidu = WebDriverWait(driver, 20).until(
                     EC.visibility_of_element_located((By.ID, "su"))
                 )
                 click_js = 'document.getElementById("su").click()'
-                driver.execute_script(click_js) # 点击搜索
+                driver.execute_script(click_js)  # 点击搜索
 
                 # 等待首页元素加载完毕
                 next_page = WebDriverWait(driver, 20).until(
                     EC.visibility_of_element_located((By.ID, "help"))
                 )
                 # 页面下拉
-                js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight',random.random()/5)
+                js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight', random.random() / 5)
                 driver.execute_script(js_xiala)
                 html = driver.page_source
                 now_url = driver.current_url
                 encrypt_url_list_rank, real_urls_rank = self.get_encrpt_urls(html, now_url)
+            except Exception as e:
+                print(e, '重启selenium')
+                driver.quit()
+                c_service.stop()
+                gc.collect()
+                driver, c_service = get_driver()
+            else:
                 # 源码ok再写入
                 if encrypt_url_list_rank:
                     for my_serp_url, my_order, tpl in encrypt_url_list_rank:
                         my_real_url = self.decrypt_url(my_serp_url, my_header)
-                        # time.sleep(0.05)
+                        time.sleep(0.01)
                         real_urls_rank.append((my_real_url, my_order, tpl))
-                    real_urls = []
+                    real_urls = []  # 存真实urls,判断目标domain是否存在
                     for my_real_url, my_order, tpl in real_urls_rank:
                         real_urls.append(my_real_url)
                         # print(tpl)
                         f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, my_real_url, my_order, tpl, group))
                     domain_str = self.get_domains(real_urls)
-                    # 目标站点是否出现
-                    for domain in domains:
-                        if domain not in domain_str:
-                            f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group, domain))
-                        else:
-                            for my_url, my_order, tpl in real_urls_rank:
-                                if domain in my_url:
-                                    f.write(
-                                        '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, my_url, my_order, group, domain,
-                                                                                tpl))
-                                    # print(my_url, my_order)
-                                    break  # 取第一个排名url
+                    if domain_str:
+                        # 目标站点是否出现
+                        for domain in domains:
+                            if domain not in domain_str:
+                                f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group, domain))
+                            else:
+                                for my_url, my_order, tpl in real_urls_rank:
+                                    if domain in my_url:
+                                        f.write(
+                                            '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, my_url, my_order, group, domain,
+                                                                                    tpl))
+                                        # print(my_url, my_order)
+                                        break  # 取第一个排名url
                 f.flush()
                 f_all.flush()
-            except Exception as e:
-                print(e)
-                # q.put(group_kwd)
-                driver.quit()
-                c_service.stop()
-                gc.collect()
-                driver,c_service = get_driver()
-
             finally:
-                del group_kwd,kwd,group
+                del group_kwd, kwd, group
                 gc.collect()
                 q.task_done()
 
@@ -341,9 +349,11 @@ if __name__ == "__main__":
     start = time.time()
     local_time = time.localtime()
     today = time.strftime('%Y%m%d', local_time)
+    list_headers = [i.strip() for i in open('headers.txt', 'r', encoding='utf-8')]
+    list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
     domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com']  # 目标域名
     my_domain = '5i5j.com'
-    driver,c_service = get_driver()
+    driver, c_service = get_driver()
 
     q, group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典

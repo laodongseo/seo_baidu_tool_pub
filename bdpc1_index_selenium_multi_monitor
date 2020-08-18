@@ -106,12 +106,14 @@ def write_myexcel(group_list, result_last, today, my_domain):
 
 
 def get_driver():
+    ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36'
     c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
     c_service.command_line_args()
     c_service.start()
     option = Options()
     option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
     option.add_argument('disable-infobars')
+    option.add_argument("user-agent=" + ua)
     option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}

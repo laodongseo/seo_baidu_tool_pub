@@ -1,5 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
+必须单线程,1是百度反爬2是写入文件未加锁可能错乱
+selenium驱动浏览器的方式 默认为无头模式,
+selenium不支持长时间操作浏览器,为了解决该问题代码检测抛出异常就重启
+
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)采集serp所有url,提取域名并统计各域名首页覆盖率
@@ -16,7 +20,8 @@
     bdmo1_index.xlsx:自己站每类词首页词数
     bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
-selenium驱动浏览器的方式 默认为无头模式,selenium不能支持上时间运行浏览器，代码采用有异常重启的方式持续
+header头信息复制浏览器全部的请求头,Accept-Encoding留deflate
+serp上请求头多测几个找到和手动搜索结果最一致的
 """
 
 from pyquery import PyQuery as pq
@@ -40,7 +45,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
 
-requests.packages.urllib3.disable_warnings()
 
 # 计算最终结果
 def get_result(file_path, result):
@@ -103,12 +107,14 @@ def write_myexcel(group_list, result_last, today,my_domain):
 
 
 def get_driver():
+    ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
     c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
     c_service.command_line_args()
     c_service.start()
     option = Options()
     option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
     # option.add_argument('disable-infobars')
+    option.add_argument("user-agent=" + ua)
     option.add_argument("--no-sandbox")
     option.add_argument("--disable-dev-shm-usage")
     option.add_argument("--disable-gpu")

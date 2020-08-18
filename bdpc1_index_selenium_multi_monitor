@@ -238,7 +238,7 @@ class bdpcIndexMonitor(threading.Thread):
     def get_real_urls(self, encrypt_url_list):
         real_url_list = [self.decrypt_url(encrypt_url) for encrypt_url in encrypt_url_list]
         real_url_set = set(real_url_list)
-        real_url_set = real_url_set.remove(None) if None in real_url_set else real_url_set
+        real_url_set.remove(None) if None in real_url_set else real_url_set
         real_url_list = list(real_url_set)
         return real_url_list
 
@@ -258,7 +258,7 @@ class bdpcIndexMonitor(threading.Thread):
         domain_list = [self.get_domain(real_url) for real_url in real_url_list]
         # 一个词某域名多个url有排名,计算一次
         domain_set = set(domain_list)
-        domain_set = domain_set.remove(None) if None in domain_set else domain_set
+        domain_set.remove(None) if None in domain_set else domain_set
         domain_str = ','.join(domain_set)
         return domain_str
 

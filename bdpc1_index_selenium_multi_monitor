@@ -1,5 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
+必须单线程,1是百度反爬2是写入文件未加锁可能错乱
+selenium驱动浏览器的方式 默认为无头模式,
+selenium不支持长时间操作浏览器,为了解决该问题代码检测抛出异常就重启
+
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
@@ -14,8 +18,9 @@
     bdpc1_index.xlsx:自己站每类词首页词数
     bdpc1_index_domains.xlsx:各监控站点每类词的首页词数
     bdpc1_index_domains.txt:各监控站点每类词的首页词数
-    
-selenium驱动浏览器的方式 默认为无头模式 selenium不能支持上时间运行浏览器，代码采用有异常重启的方式持续
+
+selenium驱动浏览器的方式 默认为无头模式,
+selenium不支持长时间操作浏览器运行,为了解决该问题代码检测抛出异常就重启
 """
 
 from pyquery import PyQuery as pq
@@ -29,6 +34,7 @@ import time
 import gc
 import random
 import requests
+import urllib3
 import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -37,7 +43,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 
 # 计算最终结果

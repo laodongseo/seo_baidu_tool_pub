@@ -19,8 +19,6 @@ selenium不支持长时间操作浏览器,为了解决该问题代码检测抛�
     bdpc1_index_domains.xlsx:各监控站点每类词的首页词数
     bdpc1_index_domains.txt:各监控站点每类词的首页词数
 
-selenium驱动浏览器的方式 默认为无头模式,
-selenium不支持长时间操作浏览器运行,为了解决该问题代码检测抛出异常就重启
 """
 
 from pyquery import PyQuery as pq

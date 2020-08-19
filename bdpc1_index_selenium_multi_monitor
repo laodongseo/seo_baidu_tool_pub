@@ -43,6 +43,16 @@ import random
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
+# 杀死进程
+def kill_process(p_name):
+    try:
+        os.system('taskkill /im {0}.exe /F'.format(p_name))
+    except Exception as e:
+        pass
+    else:
+        pass
+
+
 # 计算最终结果
 def get_result(file_path, result):
     for line in open(file_path, 'r', encoding='utf-8'):
@@ -252,7 +262,7 @@ class bdpcIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e, 'real_url解析异常', real_url)
             else:
-                domain = res.netloc # None返回字节数据
+                domain = res.netloc # real_url为None返回字节数据
         return domain
 
     # 获取某词serp源码首页排名所有域名
@@ -310,6 +320,7 @@ class bdpcIndexMonitor(threading.Thread):
                 driver.quit()
                 c_service.stop()
                 gc.collect()
+                # kill_process('chromedriver')
                 driver, c_service = get_driver()
             else:
                 # 源码ok再写入
@@ -330,8 +341,9 @@ class bdpcIndexMonitor(threading.Thread):
                             if domain not in domain_str:
                                 f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group, domain))
                             else:
+                                # my_url可能为None
                                 for my_url, my_order, tpl in real_urls_rank:
-                                    if domain in my_url:
+                                    if domain in str(my_url):
                                         f.write(
                                             '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, my_url, my_order, group, domain,
                                                                                     tpl))
@@ -355,7 +367,7 @@ if __name__ == "__main__":
     my_domain = '5i5j.com'
     driver, c_service = get_driver()
 
-    q, group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数

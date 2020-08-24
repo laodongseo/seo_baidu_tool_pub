@@ -116,13 +116,10 @@ def write_myexcel(group_list, result_last, today,my_domain):
     wb_all.save('{0}bdmo1_index_domains.xlsx'.format(today))
 
 
-def get_driver():
-    ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
-    # c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
-    # c_service.command_line_args()
-    # c_service.start()
+def get_driver(chrome_path,chromedriver_path,ua):
+    ua = ua
     option = Options()
-    option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
+    option.binary_location = chrome_path
     # option.add_argument('disable-infobars')
     option.add_argument("user-agent=" + ua)
     option.add_argument("--no-sandbox")
@@ -135,7 +132,7 @@ def get_driver():
     option.add_argument('log-level=3') #屏蔽日志
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
-    driver = webdriver.Chrome(options=option, chrome_options=option)
+    driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
     # 屏蔽特征
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
@@ -237,12 +234,13 @@ class bdmoIndexMonitor(threading.Thread):
     # 提取某url的域名部分
     def get_domain(self,real_url):
         domain = None
-        try:
-           res = urlparse(real_url)
-        except Exception as e:
-           print(e,'real_url:error')
-        else:
-           domain = res.netloc
+        if real_url:
+            try:
+               res = urlparse(real_url)
+            except Exception as e:
+               print(e,'real_url:error')
+            else:
+               domain = res.netloc
         return domain
 
     # 获取某词serp源码首页排名所有域名
@@ -291,9 +289,9 @@ class bdmoIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e)
                 driver.quit()
-                kill_process('chromedriver')
-                # c_service.stop()
-                driver = get_driver()
+                # kill_process('chromedriver')
+                gc.collect()
+                driver = get_driver(chrome_path,chromedriver_path)
             else:
                 # 源码ok再写入
                 if divs_res:
@@ -329,9 +327,10 @@ if __name__ == "__main__":
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
     my_domain = '5i5j.com' # 自己域名
     js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight',random.random())
-    driver = get_driver()
-    
-    
+    chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+    chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
+    ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
+    driver = get_driver(chrome_path,chromedriver_path)
     q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数

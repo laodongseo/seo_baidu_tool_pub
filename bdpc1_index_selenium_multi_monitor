@@ -326,7 +326,7 @@ class bdpcIndexMonitor(threading.Thread):
                 # c_service.stop()
                 # kill_process('chromedriver')
                 gc.collect()
-                driver = get_driver(chrome_path,chromedriver_path)
+                driver = get_driver(chrome_path,chromedriver_path,ua)
             else:
                 # 源码ok再写入
                 if encrypt_url_list_rank:

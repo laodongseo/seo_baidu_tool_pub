@@ -291,7 +291,7 @@ class bdmoIndexMonitor(threading.Thread):
                 driver.quit()
                 # kill_process('chromedriver')
                 gc.collect()
-                driver = get_driver(chrome_path,chromedriver_path)
+                driver = get_driver(chrome_path,chromedriver_path,ua)
             else:
                 # 源码ok再写入
                 if divs_res:
@@ -330,7 +330,7 @@ if __name__ == "__main__":
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
-    driver = get_driver(chrome_path,chromedriver_path)
+    driver = get_driver(chrome_path,chromedriver_path,ua)
     q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数

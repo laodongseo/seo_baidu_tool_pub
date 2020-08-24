@@ -311,7 +311,7 @@ class bdmoIndexMonitor(threading.Thread):
                         else:
                             for my_url,my_order,my_attr in real_urls_rank:
                                 if domain in my_url:
-                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,my_url,my_order,group,domain,my_attr))
+                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,str(my_url),my_order,group,domain,my_attr))
                                     print(my_url, my_order)
                                     break # 取第一个排名url
                 f.flush()

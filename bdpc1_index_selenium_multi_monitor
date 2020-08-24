@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-必须单线程,1是百度反爬2是写入文件未加锁可能错乱
+必须单线程,1是因为百度反爬2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 selenium不支持长时间操作浏览器,为了解决该问题代码检测抛出异常就重启
 功能:
@@ -115,9 +115,9 @@ def write_myexcel(group_list, result_last, today, my_domain):
 
 def get_driver():
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36'
-    c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
-    c_service.command_line_args()
-    c_service.start()
+    # c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
+    # c_service.command_line_args()
+    # c_service.start()
     option = Options()
     option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
     option.add_argument('disable-infobars')
@@ -134,7 +134,7 @@ def get_driver():
     })
   """
     })
-    return driver, c_service
+    return driver
 
 
 # 只解密加密url用
@@ -282,7 +282,7 @@ class bdpcIndexMonitor(threading.Thread):
 
     # 线程函数
     def run(self):
-        global driver, c_service
+        global driver
         my_header = get_header()
         while 1:
             group_kwd = q.get()
@@ -318,10 +318,10 @@ class bdpcIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e, '重启selenium')
                 driver.quit()
-                c_service.stop()
+                # c_service.stop()
+                kill_process('chromedriver')
                 gc.collect()
-                # kill_process('chromedriver')
-                driver, c_service = get_driver()
+                driver = get_driver()
             else:
                 # 源码ok再写入
                 if encrypt_url_list_rank:
@@ -365,9 +365,9 @@ if __name__ == "__main__":
     list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
     domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com']  # 目标域名
     my_domain = '5i5j.com'
-    driver, c_service = get_driver()
+    driver = get_driver()
 
-    q, group_list = bdpcIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数

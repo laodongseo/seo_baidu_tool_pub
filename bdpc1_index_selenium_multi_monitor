@@ -113,20 +113,24 @@ def write_myexcel(group_list, result_last, today, my_domain):
     wb_all.save('{0}bdpc1_index_domains.xlsx'.format(today))
 
 
-def get_driver():
-    ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36'
-    # c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
-    # c_service.command_line_args()
-    # c_service.start()
+def get_driver(chrome_path,chromedriver_path,ua):
+    ua = ua
     option = Options()
-    option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
-    option.add_argument('disable-infobars')
+    option.binary_location = chrome_path
+    # option.add_argument('disable-infobars')
     option.add_argument("user-agent=" + ua)
+    option.add_argument("--no-sandbox")
+    option.add_argument("--disable-dev-shm-usage")
+    option.add_argument("--disable-gpu")
+    option.add_argument("--disable-features=NetworkService")
+    # option.add_argument("--window-size=1920x1080")
+    option.add_argument("--disable-features=VizDisplayCompositor")
     option.add_argument('headless')
-    option.add_argument('log-level=3')  # 屏蔽日志
+    option.add_argument('log-level=3') #屏蔽日志
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
-    driver = webdriver.Chrome(options=option, chrome_options=option)
+    driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
+    # 屏蔽特征
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
     Object.defineProperty(navigator, 'webdriver', {
@@ -290,6 +294,7 @@ class bdpcIndexMonitor(threading.Thread):
             print(group, kwd)
             try:
                 driver.get('https://www.baidu.com/')
+                # exit()
                 input = WebDriverWait(driver, 30).until(
                     EC.visibility_of_element_located((By.ID, "kw"))
                 )
@@ -319,9 +324,9 @@ class bdpcIndexMonitor(threading.Thread):
                 print(e, '重启selenium')
                 driver.quit()
                 # c_service.stop()
-                kill_process('chromedriver')
+                # kill_process('chromedriver')
                 gc.collect()
-                driver = get_driver()
+                driver = get_driver(chrome_path,chromedriver_path)
             else:
                 # 源码ok再写入
                 if encrypt_url_list_rank:
@@ -365,8 +370,10 @@ if __name__ == "__main__":
     list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
     domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com']  # 目标域名
     my_domain = '5i5j.com'
-    driver = get_driver()
-
+    chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+    chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
+    ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
+    driver = get_driver(chrome_path,chromedriver_path,ua)
     q, group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)

@@ -301,7 +301,7 @@ class bdmoIndexMonitor(threading.Thread):
                     real_urls = []
                     for my_url,my_order,my_attr in real_urls_rank:
                         real_urls.append(my_url)
-                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,str(my_url),my_order,my_attr,group))
+                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,my_attr,group))
                     f_all.flush()
                     domain_str = self.get_domains(real_urls)
                     # 目标站点是否出现
@@ -310,8 +310,8 @@ class bdmoIndexMonitor(threading.Thread):
                               f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group,domain))
                         else:
                             for my_url,my_order,my_attr in real_urls_rank:
-                                if domain in my_url:
-                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,str(my_url),my_order,group,domain,my_attr))
+                                if domain in str(my_url):
+                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,my_url,my_order,group,domain,my_attr))
                                     print(my_url, my_order)
                                     break # 取第一个排名url
                 f.flush()

@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-必须单线程,1是百度反爬2是写入文件未加锁可能错乱
+必须单线程,1是因为百度反爬,2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 selenium不支持长时间操作浏览器,为了解决该问题代码检测抛出异常就重启
 
@@ -44,6 +44,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
+
+
+# 杀死进程
+def kill_process(p_name):
+    try:
+        os.system('taskkill /im {0}.exe /F'.format(p_name))
+    except Exception as e:
+        pass
+    else:
+        pass
 
 
 # 计算最终结果
@@ -108,9 +118,9 @@ def write_myexcel(group_list, result_last, today,my_domain):
 
 def get_driver():
     ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
-    c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
-    c_service.command_line_args()
-    c_service.start()
+    # c_service = Service(r'D:\install\pyhon36\chromedriver.exe')
+    # c_service.command_line_args()
+    # c_service.start()
     option = Options()
     option.binary_location = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"  # 安装的位置
     # option.add_argument('disable-infobars')
@@ -134,7 +144,7 @@ def get_driver():
     })
   """
     })
-    return driver,c_service
+    return driver
 
 
 class bdmoIndexMonitor(threading.Thread):
@@ -214,12 +224,13 @@ class bdmoIndexMonitor(threading.Thread):
                         if not link:
                             a = div('.c-result-content article header a')
                             data_log_ugc = a.attr('data-log')
-                            data_log_ugc = json.loads(data_log_ugc.replace("'", '"')) # json字符串双引号
-                            link = data_log_ugc['mu']  if 'mu' in data_log_ugc else None # mu可能为空或者不存在
-                            link = 'https://m.baidu.com{0}'.format(link) if link != None else None
-                            # 一般为卡片样式,链接太多,不提取了
-                            if not link:
-                                pass
+                            data_log_ugc = json.loads(data_log_ugc.replace("'", '"')) if data_log_ugc else '' # json字符串双引号
+                            if data_log_ugc:
+                                link = data_log_ugc['mu']  if 'mu' in data_log_ugc else None # mu可能为空或者不存在
+                                link = 'https://m.baidu.com{0}'.format(link) if link != None else None
+                                # 一般为卡片样式,链接太多,不提取了
+                                if not link:
+                                    pass
                         real_urls_rank.append((link,rank,srcid))
         return real_urls_rank
 
@@ -239,13 +250,13 @@ class bdmoIndexMonitor(threading.Thread):
             domain_list = [self.get_domain(real_url) for real_url in real_url_list]
             # 一个词某域名多个url有排名,算一次
             domain_set = set(domain_list)
-            domain_set = domain_set.remove(None) if None in domain_set else domain_set
+            domain_set.remove(None) if None in domain_set else domain_set
             domain_str = ','.join(domain_set)
             return domain_str
 
     # 线程函数
     def run(self):
-        global driver,c_service
+        global driver
         while 1:
             group_kwd = q.get()
             group,kwd = group_kwd
@@ -277,13 +288,20 @@ class bdmoIndexMonitor(threading.Thread):
                 html = driver.page_source
                 now_url = driver.current_url
                 divs_res = self.get_divs(html,now_url)
+            except Exception as e:
+                print(e)
+                driver.quit()
+                kill_process('chromedriver')
+                # c_service.stop()
+                driver = get_driver()
+            else:
                 # 源码ok再写入
                 if divs_res:
                     real_urls_rank = self.get_real_urls(divs_res)
                     real_urls = []
                     for my_url,my_order,my_attr in real_urls_rank:
                         real_urls.append(my_url)
-                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,my_attr,group))
+                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,str(my_url),my_order,my_attr,group))
                     f_all.flush()
                     domain_str = self.get_domains(real_urls)
                     # 目标站点是否出现
@@ -297,14 +315,9 @@ class bdmoIndexMonitor(threading.Thread):
                                     print(my_url, my_order)
                                     break # 取第一个排名url
                 f.flush()
-            except Exception as e:
-                print(e)
-                driver.quit()
-                c_service.stop()
-                driver,c_service = get_driver()
 
             finally:
-                del kwd
+                del kwd,group
                 gc.collect()
                 q.task_done()
                 
@@ -316,7 +329,7 @@ if __name__ == "__main__":
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
     my_domain = '5i5j.com' # 自己域名
     js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight',random.random())
-    driver,c_service = get_driver()
+    driver = get_driver()
     
     
     q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类

@@ -37,7 +37,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 import random
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -323,7 +322,6 @@ class bdpcIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e, '重启selenium')
                 driver.quit()
-                # c_service.stop()
                 # kill_process('chromedriver')
                 gc.collect()
                 driver = get_driver(chrome_path,chromedriver_path,ua)

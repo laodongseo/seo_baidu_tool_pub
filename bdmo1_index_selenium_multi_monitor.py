@@ -20,8 +20,6 @@ selenium不支持长时间操作浏览器,为了解决该问题代码检测抛�
     bdmo1_index.xlsx:自己站每类词首页词数
     bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
-header头信息复制浏览器全部的请求头,Accept-Encoding留deflate
-serp上请求头多测几个找到和手动搜索结果最一致的
 """
 
 from pyquery import PyQuery as pq
@@ -42,7 +40,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 
 
 
@@ -331,7 +328,7 @@ if __name__ == "__main__":
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")

@@ -18,6 +18,7 @@
     sgmo1_index_domains.txt:各监控站点每类词的首页词数
 header头信息复制浏览器全部的请求头,Accept-Encoding留deflate
 搜狗M端源码极其不规范,必须处理后才能正常解析
+搜狗反爬比较严重,M端4秒一个请求较为安全
 """
 
 import requests

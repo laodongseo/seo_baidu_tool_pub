@@ -127,6 +127,8 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-features=VizDisplayCompositor")
     option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
+    option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
+    option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
     driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )

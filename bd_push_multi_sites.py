@@ -50,7 +50,7 @@ def push_url(domain,retry=1):
                     elif 'error' in keys and 'over quota' in values:
                         print(domain,'配额不够,开始下一个域名推送',html)
                         return '下一个'
-                    elif 'error' in keys and 'site' in values:
+                    elif 'error' in keys and 'site error' in values:
                         print(domain,'站点配置错误,略过',html)
                         return '下一个'
                     else:

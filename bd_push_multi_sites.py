@@ -42,15 +42,16 @@ def push_url(domain,retry=1):
                     if retry > 0:
                         push_url(retry-1)
                 else:
-                    html = r.text
-                    if '"success"' in html:
+                    html = r.json()
+                    keys = [ key for key,value in html.items()]
+                    values = [ value for key,value in html.items()]
+                    if 'success' in keys:
                         print(domain,'推送成功',len(data_urls))
-
-                    elif 'error' in html and 'over quota' in html:
-                        print(domain,'配额不够,开始下一个域名推送')
+                    elif 'error' in keys and 'over quota' in values:
+                        print(domain,'配额不够,开始下一个域名推送',html)
                         return '下一个'
-                    elif 'error' in html and 'site' in html:
-                        print(domain,'站点配置错误,略过')
+                    elif 'error' in keys and 'site' in values:
+                        print(domain,'站点配置错误,略过',html)
                         return '下一个'
                     else:
                         f.write(str_urls)

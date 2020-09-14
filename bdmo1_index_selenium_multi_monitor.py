@@ -20,6 +20,7 @@ selenium不支持长时间操作浏览器,为了解决该问题代码检测抛�
     bdmo1_index.xlsx:自己站每类词首页词数
     bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
+    log.txt记录程序运行的异常
 """
 
 from pyquery import PyQuery as pq
@@ -40,6 +41,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import traceback
+
 
 
 
@@ -131,7 +135,9 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
-    driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
+    caps = DesiredCapabilities.CHROME
+    caps['acceptSslCerts'] = False
+    driver = webdriver.Chrome(options=option,chrome_options=option,executable_path=chromedriver_path,desired_capabilities=caps)
     # 屏蔽特征
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
@@ -263,7 +269,6 @@ class bdmoIndexMonitor(threading.Thread):
                 input = WebDriverWait(driver, 30).until(
                     EC.visibility_of_element_located((By.ID, "index-kw"))
                 )
-
                 input_click_js = 'document.getElementById("index-kw").click()'
                 driver.execute_script(input_click_js) # 点击输入框
 
@@ -275,18 +280,28 @@ class bdmoIndexMonitor(threading.Thread):
                 )
                 click_js = 'document.getElementById("index-bn").click()'
                 driver.execute_script(click_js) # 点击搜索
-
-                # 等待首页元素加载完毕
-                bottom = WebDriverWait(driver, 20).until(
-                    EC.visibility_of_element_located((By.ID, "copyright"))
+                # 等待body元素加载
+                body = WebDriverWait(driver, 30).until(
+                    EC.visibility_of_element_located((By.TAG_NAME,'body'))
                 )
-                # 页面下拉
-                driver.execute_script(js_xiala)
-                html = driver.page_source
-                now_url = driver.current_url
-                divs_res = self.get_divs(html,now_url)
+                title = driver.title
+                if '- 百度' in title:
+                    # 等待底部元素加载完毕
+                    bottom = WebDriverWait(driver, 20).until(
+                        EC.visibility_of_element_located((By.ID, 'page-copyright'))
+                    )
+                    # 页面下拉
+                    driver.execute_script(js_xiala)
+                    html = driver.page_source
+                    now_url = driver.current_url
+                    divs_res = self.get_divs(html,now_url)
+                else:
+                    print('源码可能异常,暂停60秒',title)
+                    continue
             except Exception as e:
                 print(e)
+                traceback.print_exc(file=open('log.txt', 'a'))
+                html = driver.page_source
                 driver.quit()
                 # kill_process('chromedriver')
                 gc.collect()
@@ -330,7 +345,7 @@ if __name__ == "__main__":
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'w',encoding="utf-8")

@@ -176,12 +176,13 @@ def click_ele(id):
     webdriver.ActionChains(driver).move_to_element(rank_domain).click(rank_domain).perform()
 
 def close_handle():
-    for handle in driver.window_handles[1:]:
-        driver.switch_to.window(handle)
-        driver.close()
     # 检测完全关闭
-    while 1:
-        if len(driver.window_handles) == 1:
+    if len(driver.window_handles) > 1:
+        for handle in driver.window_handles[1:]:
+            driver.switch_to.window(handle)
+            driver.close()
+    while True:
+        if len(driver.window_handles) <= 1:
             break
 
 # 主函数

@@ -178,15 +178,19 @@ def click_ele(id):
 def close_handle():
     for handle in driver.window_handles[1:]:
         driver.switch_to.window(handle)
-        print(driver.current_window_handle)
         driver.close()
+    # 检测完全关闭
+    while 1:
+        if len(driver.window_handles) == 1:
+            break
+
 # 主函数
 def run():
     global driver
     my_header = get_header()
     while 1:
         # kwd,click_domain = q.get()
-        kwd,click_domain = '租房','5i5j.com'
+        kwd,click_domain = '租房','juntuan.org'
         is_click = 0 # 标记是否点击
         # 一个词前五页循环外侧加异常
         try:
@@ -220,7 +224,7 @@ def run():
                 if encrypt_url_list_rank:
                     for my_serp_url, my_order in encrypt_url_list_rank:
                         my_real_url = decrypt_url(my_serp_url, my_header)
-                        time.sleep(0.5)
+                        time.sleep(0.2)
                         real_urls_rank.append((my_real_url, my_order))
 
                     for my_real_url, my_order in real_urls_rank:
@@ -230,8 +234,9 @@ def run():
                     if domain_str:
                         # 目标不出现则点击第1名
                         if click_domain not in domain_str:
-                            print('点击第1个')
-                            click_ele(1)
+                            id_first = (page_num-1) * 10 + 1
+                            print('点击第{0}页第1个'.format(page_num))
+                            click_ele(id_first)
                             time.sleep(0.5)
                             driver.execute_script(js_xiala)
                         # 目标出现直接点目标

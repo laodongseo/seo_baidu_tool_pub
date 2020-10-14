@@ -1,5 +1,8 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
+翻页前5页,翻页数可更改
+点击关键词对应的目标域名
+当前页没有该域名则点击第1名
 """
 
 from pyquery import PyQuery as pq
@@ -27,6 +30,17 @@ import traceback
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
+
+# 提取点击任务
+def get_task(filepath):
+    q = queue.Queue()
+    for line in open(filepath,'r',encoding='utf-8'):
+        line_content = line.strip().split('\t')
+        kwd,domain = line_content
+        q.put((kwd,domain))
+    return q
+
+
 def get_driver(chrome_path,chromedriver_path,ua):
     ua = ua
     option = Options()
@@ -39,14 +53,16 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-features=NetworkService")
     # option.add_argument("--window-size=1920x1080")
     option.add_argument("--disable-features=VizDisplayCompositor")
-    # option.add_argument('headless')
+    option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
     option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
     option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
+    option.add_experimental_option("excludeSwitches", ["enable-automation"]) 
+    option.add_experimental_option('useAutomationExtension', False)
     No_Image_loading = {"profile.managed_default_content_settings.images": 1}
     option.add_experimental_option("prefs", No_Image_loading)
     driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
-    # 屏蔽特征
+    # 屏蔽true特征
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
     Object.defineProperty(navigator, 'webdriver', {
@@ -56,7 +72,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     })
     return driver
 
-# 只解密加密url用
+# 只解密url用
 def get_header():
     my_header = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
@@ -174,26 +190,38 @@ def click_ele(id):
         EC.visibility_of_element_located((By.XPATH, "//*[@id='{0}']/h3/a".format(id)))
     )
     webdriver.ActionChains(driver).move_to_element(rank_domain).click(rank_domain).perform()
+    if int(id) == 1:
+        time.sleep(random.randint(0,1))
+    else:
+        time.sleep(random.randint(3,5))
 
 def close_handle():
-    # 检测完全关闭
-    if len(driver.window_handles) > 1:
-        for handle in driver.window_handles[1:]:
-            driver.switch_to.window(handle)
-            driver.close()
-    while True:
-        if len(driver.window_handles) <= 1:
-            break
+    global driver
+    try:
+        if len(driver.window_handles) > 1:
+            for handle in driver.window_handles[1:]:
+                driver.switch_to.window(handle)
+                driver.close()
+        # 检测关闭结束
+        while True:
+            if len(driver.window_handles) == 1:
+                        break
+        # 切回主窗口
+        driver.switch_to.window(driver.window_handles[0])
+    except Exception as e:
+        traceback.print_exc(file=open('log.txt', 'a'))
+        print(e, '窗口切换异常')
+    
 
 # 主函数
 def run():
     global driver
     my_header = get_header()
     while 1:
-        # kwd,click_domain = q.get()
-        kwd,click_domain = '租房','juntuan.org'
+        kwd,click_domain = q.get()
+        print(kwd,click_domain)
         is_click = 0 # 标记是否点击
-        # 一个词前五页循环外侧加异常
+        # 一个词前五页循环,循环侧加异常
         try:
             html = ''
             for page_num in list(page_dict.keys()):
@@ -245,33 +273,47 @@ def run():
                             for my_real_url, my_order in real_urls_rank:
                                 if click_domain in my_real_url:
                                     click_ele(my_order)
+                                    now_time = time.strftime('%Y-%m-%d-%H:%M:%S',time.localtime(time.time()))
                                     is_click = 1
                                     time.sleep(2)
+                                    f_click.write('{0}\t{1}\t第{2}页\t{3}\t{4}\n'.format(kwd,click_domain,page_num,'1次',now_time))
+                                    f_click.flush()
                                     break
         except Exception as e:
             traceback.print_exc(file=open('log.txt', 'w'))
             print(e, '重启selenium')
-            driver.quit()
+            # driver.quit()
             gc.collect()
-            driver = get_driver(chrome_path,chromedriver_path,ua)
+            # driver = get_driver(chrome_path,chromedriver_path,ua)
+            return
         else:
             pass                    
         finally:
             del kwd, click_domain
+            q.task_done()
             gc.collect()
             close_handle()
-            exit()
-            # q.task_done()
 
 
 if __name__ == "__main__":
-    page_dict = {1:'首页',2:'二页',3:'三页',4:'四页',5:'五页'}  # 查询页码
+    task_file = './kwd_doamin.txt' # 任务文件
+    click_res_file = './kwd_doamin_click.txt' #点击记录文件
+    f_click = open(click_res_file,'w',encoding='utf-8')
+    page_dict = {1:'首页',2:'二页',3:'三页',4:'四页',5:'五页'} # 翻页页码 
     # 页面下拉
     js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight', random.random() / 0.2)
     # 点击下一页js
     next_page_click_js = """var pages =document.querySelectorAll('.n');var next_page = pages[pages.length-1];next_page.click()"""
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-    chromedriver_path = 'D:/python3/install/chromedriver.exe'
+    chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    run()
+    q = get_task(task_file)
+    # 设置线程数
+    for i in list(range(1)):
+        t = threading.Thread(target=run)
+        t.setDaemon(True)
+        t.start()
+    q.join()
+    f_click.flush()
+    f_click.close()

@@ -53,7 +53,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-features=NetworkService")
     # option.add_argument("--window-size=1920x1080")
     option.add_argument("--disable-features=VizDisplayCompositor")
-    option.add_argument('headless')
+    # option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
     option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
     option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
@@ -267,7 +267,6 @@ def run():
                             print('点击第{0}页第1个'.format(page_num))
                             click_ele(id_first)
                             time.sleep(0.5)
-                            driver.execute_script(js_xiala)
                         # 目标出现直接点目标
                         else:
                             for my_real_url, my_order in real_urls_rank:
@@ -282,10 +281,9 @@ def run():
         except Exception as e:
             traceback.print_exc(file=open('log.txt', 'w'))
             print(e, '重启selenium')
-            # driver.quit()
+            driver.quit()
             gc.collect()
-            # driver = get_driver(chrome_path,chromedriver_path,ua)
-            return
+            driver = get_driver(chrome_path,chromedriver_path,ua)
         else:
             pass                    
         finally:
@@ -305,7 +303,7 @@ if __name__ == "__main__":
     # 点击下一页js
     next_page_click_js = """var pages =document.querySelectorAll('.n');var next_page = pages[pages.length-1];next_page.click()"""
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-    chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
+    chromedriver_path = 'D:/python3/install/chromedriver.exe'
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
     driver = get_driver(chrome_path,chromedriver_path,ua)
     q = get_task(task_file)

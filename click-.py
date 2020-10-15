@@ -24,6 +24,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import random
 import traceback
 
@@ -53,23 +54,20 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-features=NetworkService")
     # option.add_argument("--window-size=1920x1080")
     option.add_argument("--disable-features=VizDisplayCompositor")
-    # option.add_argument('headless')
+    option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
     option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
     option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
+    capabilities = DesiredCapabilities.CHROME
+    capabilities['acceptInsecureCerts'] = True
     option.add_experimental_option("excludeSwitches", ["enable-automation"]) 
     option.add_experimental_option('useAutomationExtension', False)
     No_Image_loading = {"profile.managed_default_content_settings.images": 1}
     option.add_experimental_option("prefs", No_Image_loading)
-    driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
-    # 屏蔽true特征
-    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        "source": """
-    Object.defineProperty(navigator, 'webdriver', {
-      get: () => undefined
-    })
-  """
-    })
+    driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path,desired_capabilities=capabilities)
+    # 屏蔽webdriver特征
+    option.add_argument("--disable-blink-features")
+    option.add_argument("--disable-blink-features=AutomationControlled")
     return driver
 
 # 只解密url用
@@ -107,14 +105,14 @@ def get_html(kwd):
     input_js = 'document.getElementById("kw").value="{0}"'.format(kwd)
     driver.execute_script(input_js)  # 输入搜索词
 
-    baidu = WebDriverWait(driver, 20).until(
+    baidu = WebDriverWait(driver, 30).until(
         EC.visibility_of_element_located((By.ID, "su"))
     )
     click_js = 'document.getElementById("su").click()'
     driver.execute_script(click_js)  # 点击搜索
 
     # 等待首页元素加载完毕
-    bottom = WebDriverWait(driver, 20).until(
+    bottom = WebDriverWait(driver, 30).until(
         EC.visibility_of_element_located((By.ID, "help"))
     )
     driver.execute_script(js_xiala)
@@ -294,8 +292,9 @@ def run():
 
 
 if __name__ == "__main__":
+    now_day = time.strftime('%Y-%m-%d',time.localtime(time.time()))
     task_file = './kwd_doamin.txt' # 任务文件
-    click_res_file = './kwd_doamin_click.txt' #点击记录文件
+    click_res_file = './{0}kwd_doamin_click.txt'.format(now_day) #点击记录文件
     f_click = open(click_res_file,'w',encoding='utf-8')
     page_dict = {1:'首页',2:'二页',3:'三页',4:'四页',5:'五页'} # 翻页页码 
     # 页面下拉
@@ -315,3 +314,4 @@ if __name__ == "__main__":
     q.join()
     f_click.flush()
     f_click.close()
+    driver.quit()

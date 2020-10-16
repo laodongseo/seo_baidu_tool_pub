@@ -3,6 +3,7 @@
 翻页前5页,翻页数可更改
 点击关键词对应的目标域名
 当前页没有该域名则点击第1名
+死循环,点完一轮会继续
 """
 
 from pyquery import PyQuery as pq
@@ -10,8 +11,6 @@ import threading
 import queue
 import time
 from urllib.parse import urlparse
-from openpyxl import load_workbook
-from openpyxl import Workbook
 import time
 import gc
 import random
@@ -53,6 +52,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-gpu")
     option.add_argument("--disable-features=NetworkService")
     # option.add_argument("--window-size=1920x1080")
+    option.add_argument('--start-maximized')
     option.add_argument("--disable-features=VizDisplayCompositor")
     option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
@@ -147,7 +147,7 @@ def get_encrpt_urls(html, url):
 
 # 解密某条加密url
 def decrypt_url(encrypt_url, my_header, retry=1):
-    real_url = None  # 默认None
+    real_url = ''  # 默认空字符串
     if encrypt_url:
         try:
             encrypt_url = encrypt_url.replace('http://', 'https://')
@@ -158,7 +158,7 @@ def decrypt_url(encrypt_url, my_header, retry=1):
             if retry > 0:
                 decrypt_url(encrypt_url, my_header, retry - 1)
         else:
-            real_url = r.headers['Location'] if 'Location' in r.headers else None
+            real_url = r.headers['Location'] if 'Location' in r.headers else ''
     return real_url
 
 # 提取某url的域名部分
@@ -196,6 +196,7 @@ def click_ele(id):
 def close_handle():
     global driver
     try:
+        # print(driver.window_handles)
         if len(driver.window_handles) > 1:
             for handle in driver.window_handles[1:]:
                 driver.switch_to.window(handle)
@@ -207,6 +208,7 @@ def close_handle():
         # 切回主窗口
         driver.switch_to.window(driver.window_handles[0])
     except Exception as e:
+        print(driver.window_handles)
         traceback.print_exc(file=open('log.txt', 'a'))
         print(e, '窗口切换异常')
     
@@ -251,7 +253,7 @@ def run():
                 if encrypt_url_list_rank:
                     for my_serp_url, my_order in encrypt_url_list_rank:
                         my_real_url = decrypt_url(my_serp_url, my_header)
-                        time.sleep(0.2)
+                        time.sleep(0.3)
                         real_urls_rank.append((my_real_url, my_order))
 
                     for my_real_url, my_order in real_urls_rank:
@@ -277,7 +279,7 @@ def run():
                                     f_click.flush()
                                     break
         except Exception as e:
-            traceback.print_exc(file=open('log.txt', 'w'))
+            traceback.print_exc(file=open('log.txt', 'a'))
             print(e, '重启selenium')
             driver.quit()
             gc.collect()
@@ -295,6 +297,7 @@ if __name__ == "__main__":
     now_day = time.strftime('%Y-%m-%d',time.localtime(time.time()))
     task_file = './kwd_doamin.txt' # 任务文件
     click_res_file = './{0}kwd_doamin_click.txt'.format(now_day) #点击记录文件
+    f_error = open('log.txt','w',encoding='utf-8')
     f_click = open(click_res_file,'w',encoding='utf-8')
     page_dict = {1:'首页',2:'二页',3:'三页',4:'四页',5:'五页'} # 翻页页码 
     # 页面下拉
@@ -302,16 +305,20 @@ if __name__ == "__main__":
     # 点击下一页js
     next_page_click_js = """var pages =document.querySelectorAll('.n');var next_page = pages[pages.length-1];next_page.click()"""
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-    chromedriver_path = 'D:/python3/install/chromedriver.exe'
+    chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
-    driver = get_driver(chrome_path,chromedriver_path,ua)
-    q = get_task(task_file)
-    # 设置线程数
-    for i in list(range(1)):
-        t = threading.Thread(target=run)
-        t.setDaemon(True)
-        t.start()
-    q.join()
-    f_click.flush()
+    while True:  
+        driver = get_driver(chrome_path,chromedriver_path,ua)
+        q = get_task(task_file)
+        # 设置线程数
+        for i in list(range(1)):
+            t = threading.Thread(target=run)
+            t.setDaemon(True)
+            t.start()
+        q.join()
+        f_click.flush()
+        f_error.flush()
+        driver.quit()
+        time.sleep(2)
     f_click.close()
-    driver.quit()
+    f_error.close()

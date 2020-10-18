@@ -121,7 +121,7 @@ class BdpcRealUrl(threading.Thread):
                 del kwd
                 gc.collect()
                 q.task_done()
-                exit()
+
 
 
 if __name__ == "__main__":

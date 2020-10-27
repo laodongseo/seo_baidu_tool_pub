@@ -219,7 +219,7 @@ class bdpcIndexMonitor(threading.Thread):
         real_url = None # 默认None
         try:
             encrypt_url = encrypt_url.replace('http://','https://')
-            r = requests.head(encrypt_url,headers=my_header)
+            r = requests.head(encrypt_url,headers=my_header,timeout=10)
         except Exception as e:
             print(encrypt_url,'解密失败',e)
             time.sleep(30)

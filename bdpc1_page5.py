@@ -162,7 +162,7 @@ class bdpcCoverPage5(threading.Thread):
         try:
             encrypt_url = encrypt_url.replace('http://','https://')
             # print(encrypt_url)
-            r = requests.head(encrypt_url,headers=user_agent)
+            r = requests.head(encrypt_url,headers=user_agent,,timeout=10)
         except Exception as e:
             print(encrypt_url,'解密失败',e)
             time.sleep(6)

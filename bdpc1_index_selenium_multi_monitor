@@ -7,6 +7,7 @@ selenium不支持长时间操作浏览器,为了解决该问题代码检测抛�
    1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
    3)通过tpl属性记录serp排名url的特征
+   4)支持顶级域名或者其他域名
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
@@ -39,6 +40,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 import random
 import traceback
+import tld
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -133,18 +135,15 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_experimental_option('useAutomationExtension', False)
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
-    # 屏蔽webdriver特征
-    option.add_argument("--disable-blink-features")
-    option.add_argument("--disable-blink-features=AutomationControlled")
     driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
-    # 屏蔽window.navigator.webdriver特征
-  #   driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-  #       "source": """
-  #   Object.defineProperty(navigator, 'webdriver', {
-  #     get: () => undefined
-  #   })
-  # """
-  #   })
+    # 屏蔽特征
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => undefined
+    })
+  """
+    })
     return driver
 
 
@@ -244,8 +243,8 @@ class bdpcIndexMonitor(threading.Thread):
             div_list = doc('.result').items()  # 自然排名
             div_op_list = doc('.result-op').items()  # 非自然排名
             for div in div_list:
-                rank = div.attr('id')
-                tpl = div.attr('tpl') if div.attr('tpl') else 'xxx'
+                rank = div.attr('id') if div.attr('id') else 'id_xxx'
+                tpl = div.attr('tpl') if div.attr('tpl') else 'tpl_xxx'
                 if rank:
                     try:
                         a = div('h3 a')
@@ -255,8 +254,8 @@ class bdpcIndexMonitor(threading.Thread):
                         encrypt_url = a.attr('href')
                         encrypt_url_list.append((encrypt_url, rank, tpl))
             for div in div_op_list:
-                rank_op = div.attr('id')
-                tpl = div.attr('tpl') if div.attr('tpl') else 'xxx'
+                rank_op = div.attr('id') if div.attr('id') else 'id_xxx'
+                tpl = div.attr('tpl') if div.attr('tpl') else 'tpl_xxx'
                 if rank_op:
                     link = div.attr('mu')  # 真实url,有些op样式没有mu属性
                     # print(link,rank_op)
@@ -299,7 +298,7 @@ class bdpcIndexMonitor(threading.Thread):
 
     # 提取某url的域名部分
     def get_domain(self, real_url):
-        domain = None
+        domain = ''
         if real_url:
             try:
                 res = urlparse(real_url)
@@ -311,18 +310,35 @@ class bdpcIndexMonitor(threading.Thread):
 
     # 获取某词serp源码首页排名所有域名
     def get_domains(self, real_url_list):
-        domain_str = ''
-        domain_list = [self.get_domain(real_url) for real_url in real_url_list]
-        # 一个词某域名多个url有排名,计算一次
-        domain_set = set(domain_list)
-        domain_set.remove(None) if None in domain_set else domain_set
-        try:
-            domain_str = ','.join(domain_set) if domain_set else ''  # 避免domain_list都是None
-        except Exception as e:
-            print(domain_set,e)
-        else:
-            pass
-        return domain_str
+        domain_url_dicts = {}
+        for real_url, my_order, tpl in real_urls_rank:
+            if real_url:
+                domain = self.get_domain(real_url)
+                # 一个词某域名多个url有排名,算一次
+                domain_url_dicts[domain] = (real_url,my_order,tpl) if domain not in domain_url_dicts else domain_url_dicts[domain]
+        return domain_url_dicts
+
+
+    # 提取某url的顶级域名
+    def get_top_domain(self,real_url):
+        top_domain = ''
+        if real_url:
+            try:
+                obj = tld.get_tld(real_url,as_object=True)
+                top_domain = obj.fld
+            except Exception as e:
+                print(e,'top domain:error')
+        return top_domain
+
+    # 获取某词serp源码首页排名的顶级域名
+    def get_top_domains(self,real_urls_rank):
+        domain_url_dicts = {}
+        for real_url, my_order, tpl in real_urls_rank:
+            if real_url:
+                top_domain = self.get_top_domain(real_url)
+                # 一个词某域名多个url有排名,算一次
+                domain_url_dicts[top_domain] = (real_url,my_order,tpl) if top_domain not in domain_url_dicts else domain_url_dicts[top_domain]
+        return domain_url_dicts
 
     # 线程函数
     def run(self):
@@ -331,7 +347,7 @@ class bdpcIndexMonitor(threading.Thread):
         while 1:
             group_kwd = q.get()
             group, kwd = group_kwd
-            # print(group, kwd)
+            print(group, kwd)
             try:
                 html,now_url = self.get_html(kwd)
                 encrypt_url_list_rank, real_urls_rank = self.get_encrpt_urls(html, now_url)
@@ -349,26 +365,21 @@ class bdpcIndexMonitor(threading.Thread):
                         my_real_url = self.decrypt_url(my_serp_url, my_header)
                         time.sleep(0.2)
                         real_urls_rank.append((my_real_url, my_order, tpl))
-                    real_urls = []  # 存真实urls,判断目标domain是否存在
+                    
                     for my_real_url, my_order, tpl in real_urls_rank:
-                        real_urls.append(my_real_url)
-                        # print(tpl)
-                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, my_real_url, my_order, tpl, group))
-                    domain_str = self.get_domains(real_urls)
-                    if domain_str:
+                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, str(my_real_url), my_order, tpl, group))
+
+                    domain_url_dicts = self.get_top_domains(real_urls_rank)
+                    if domain_url_dicts:
+                        domain_all = domain_url_dicts.keys()
                         # 目标站点是否出现
                         for domain in domains:
-                            if domain not in domain_str:
+                            if domain not in domain_all:
                                 f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group, domain))
                             else:
                                 # my_url可能为None
-                                for my_url, my_order, tpl in real_urls_rank:
-                                    if domain in str(my_url):
-                                        f.write(
-                                            '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, my_url, my_order, group, domain,
-                                                                                    tpl))
-                                        # print(my_url, my_order)
-                                        break  # 取第一个排名url
+                                my_url,my_order,tpl = domain_url_dicts[domain]
+                                f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, str(my_url), my_order, group, domain,tpl))
                 f.flush()
                 f_all.flush()
             finally:
@@ -383,7 +394,7 @@ if __name__ == "__main__":
     today = time.strftime('%Y%m%d', local_time)
     list_headers = [i.strip() for i in open('headers.txt', 'r', encoding='utf-8')]
     list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
-    domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com']  # 目标域名
+    domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com','ke.com']  # 目标域名
     my_domain = '5i5j.com'
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'

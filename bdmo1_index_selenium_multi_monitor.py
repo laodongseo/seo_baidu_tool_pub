@@ -3,11 +3,13 @@
 必须单线程,1是因为百度反爬,2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 selenium不支持长时间操作浏览器,为了解决该问题代码检测抛出异常就重启
-
+有异常会写入log.txt
+多个登录账号后的cookie轮换访问
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)采集serp所有url,提取域名并统计各域名首页覆盖率
    3)采集了serp上的排名url特征srcid值
+   4)支持顶级域名或者其他域名
 提示:
   1)相关网站.相关企业.智能小程序.其他人还在搜.热议聚合.资讯聚合.搜索智能聚合.视频全部算在内
     所以首页排名有可能大于10
@@ -20,7 +22,6 @@ selenium不支持长时间操作浏览器,为了解决该问题代码检测抛�
     bdmo1_index.xlsx:自己站每类词首页词数
     bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
     bdmo1_index_domains.txt:各监控站点每类词的首页词数
-    log.txt记录程序运行的异常
 """
 
 from pyquery import PyQuery as pq
@@ -41,10 +42,27 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import traceback
+import tld
 
 
+
+# 杀死进程
+def get_ua(filepath):
+    cookie_list = []
+    cookie_list = [line.strip() for line in open(filepath,'r',encoding='utf-8')]
+    return cookie_list
+
+
+# 字符串cookie转为字典
+def to_dict(cookie_str):
+    cookie = {}
+    lists = cookie_str.split(';')
+    for i in lists:
+        j = i.strip()
+        j = j.split('=')
+        cookie[j[0]] = j[1]
+    return cookie
 
 
 # 杀死进程
@@ -132,22 +150,26 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
     option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
+    option.add_argument('--ignore-certificate-errors')
     option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
     option.add_experimental_option("excludeSwitches", ["enable-automation"]) 
     option.add_experimental_option('useAutomationExtension', False)
-    No_Image_loading = {"profile.managed_default_content_settings.images": 2}
+    No_Image_loading = {"profile.managed_default_content_settings.images": 1}
     option.add_experimental_option("prefs", No_Image_loading)
-    caps = DesiredCapabilities.CHROME
-    caps['acceptSslCerts'] = False #屏蔽ssl error
-    driver = webdriver.Chrome(options=option,chrome_options=option,executable_path=chromedriver_path,desired_capabilities=caps)
+    resolution = {"deviceMetrics": { "width": 375, "height": 667, "pixelRatio": 1 }}
+    option.add_experimental_option("mobileEmulation", resolution)
+    # 屏蔽webdriver特征
+    option.add_argument("--disable-blink-features")
+    option.add_argument("--disable-blink-features=AutomationControlled")
+    driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
     # 屏蔽特征
-    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        "source": """
-    Object.defineProperty(navigator, 'webdriver', {
-      get: () => undefined
-    })
-  """
-    })
+  #   driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+  #       "source": """
+  #   Object.defineProperty(navigator, 'webdriver', {
+  #     get: () => undefined
+  #   })
+  # """
+  #   })
     return driver
 
 
@@ -185,6 +207,39 @@ class bdmoIndexMonitor(threading.Thread):
         print("结果字典init...")
         return result
 
+
+    # 获取源码,有异常由run函数的try捕获
+    def get_html(self,kwd,user_agent):
+        global driver
+        html = now_url = ''
+        # driver.get('https://m.baidu.com/')
+        # for k, v in cookie_dict.items():
+        #     driver.add_cookie({'name': k, 'value': v})
+        driver.execute_cdp_cmd("Network.enable", {})
+        driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": {"User-Agent":user_agent}})
+        driver.get('https://m.baidu.com/')
+        input = WebDriverWait(driver, 30).until(
+            EC.visibility_of_element_located((By.ID, "index-kw"))
+        )
+
+        input_click_js = 'document.getElementById("index-kw").click()'
+        driver.execute_script(input_click_js) # 点击输入框
+
+        input_js = 'document.getElementById("index-kw").value="{0}"'.format(kwd)
+        driver.execute_script(input_js) # 输入搜索词            
+        baidu = WebDriverWait(driver, 20).until(
+            EC.visibility_of_element_located((By.ID, "index-bn"))
+        )
+        click_js = 'document.getElementById("index-bn").click()'
+        driver.execute_script(click_js) # 点击搜索
+        # 页面下拉
+        driver.execute_script(js_xiala)
+        # 等待首页搜索后的底部元素加载,验证码页面无此元素
+        # 此处异常由run函数的try捕获
+        bottom = WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.ID, "page-copyright")),message='error_bottom')
+        html = driver.page_source
+        now_url = driver.current_url
+        return html,now_url
 
     # 获取某词的serp源码上包含排名url的div块
     def get_divs(self, html ,url):
@@ -250,14 +305,39 @@ class bdmoIndexMonitor(threading.Thread):
                domain = res.netloc
         return domain
 
+
+    # 提取某url的顶级域名
+    def get_top_domain(self,real_url):
+        top_domain = None
+        if real_url:
+            try:
+                obj = tld.get_tld(real_url,as_object=True)
+                top_domain = obj.fld
+            except Exception as e:
+                print(e,'top domain:error')
+        return top_domain
+        
+
     # 获取某词serp源码首页排名所有域名
-    def get_domains(self,real_url_list):
-            domain_list = [self.get_domain(real_url) for real_url in real_url_list]
-            # 一个词某域名多个url有排名,算一次
-            domain_set = set(domain_list)
-            domain_set.remove(None) if None in domain_set else domain_set
-            domain_str = ','.join(domain_set)
-            return domain_str
+    def get_domains(self,real_urls_rank):
+            domain_url_dicts = {}
+            for real_url,my_order,my_attr in real_urls_rank:
+                if real_url:
+                    top_domain = self.get_domain(real_url)
+                    # 一个词某域名多个url有排名,算一次
+                    domain_url_dicts[top_domain] = (real_url,my_order,my_attr) if top_domain not in domain_url_dicts else domain_url_dicts[top_domain]
+            return domain_url_dicts
+
+    # 获取某词serp源码首页排名的顶级域名
+    def get_top_domains(self,real_urls_rank):
+            domain_url_dicts = {}
+            for real_url,my_order,my_attr in real_urls_rank:
+                if real_url:
+                    top_domain = self.get_top_domain(real_url)
+                    # 一个词某域名多个url有排名,算一次
+                    domain_url_dicts[top_domain] = (real_url,my_order,my_attr) if top_domain not in domain_url_dicts else domain_url_dicts[top_domain]
+            return domain_url_dicts
+
 
     # 线程函数
     def run(self):
@@ -267,76 +347,55 @@ class bdmoIndexMonitor(threading.Thread):
             group,kwd = group_kwd
             print(group,kwd)
             try:
-                driver.get('https://m.baidu.com/')
-                input = WebDriverWait(driver, 30).until(
-                    EC.visibility_of_element_located((By.ID, "index-kw"))
-                )
-                input_click_js = 'document.getElementById("index-kw").click()'
-                driver.execute_script(input_click_js) # 点击输入框
-
-                input_js = 'document.getElementById("index-kw").value="{0}"'.format(kwd)
-                driver.execute_script(input_js) # 输入搜索词
-                
-                baidu = WebDriverWait(driver, 20).until(
-                    EC.visibility_of_element_located((By.ID, "index-bn"))
-                )
-                click_js = 'document.getElementById("index-bn").click()'
-                driver.execute_script(click_js) # 点击搜索
-                # 等待body元素加载
-                body = WebDriverWait(driver, 30).until(
-                    EC.visibility_of_element_located((By.TAG_NAME,'body'))
-                )
-                # 等待底部元素加载完毕
-                bottom = WebDriverWait(driver, 20).until(
-                    EC.visibility_of_element_located((By.ID, 'page-copyright'))
-                )
-                # 页面下拉
-                driver.execute_script(js_xiala)
-                html = driver.page_source
-                now_url = driver.current_url
+                user_agent = random.choice(user_agents)
+                html,now_url = self.get_html(kwd,user_agent)
                 divs_res = self.get_divs(html,now_url)
             except Exception as e:
                 print(e)
-                traceback.print_exc(file=open('log.txt', 'a'))
-                html = driver.page_source
-                driver.quit()
-                # kill_process('chromedriver')
-                gc.collect()
-                driver = get_driver(chrome_path,chromedriver_path,ua)
+                traceback.print_exc(file=open('log.txt', 'w'))
+                msg = e.msg if 'msg' in dir(e) else ''
+                if 'error_bottom' in msg:
+                    print('暂停300s',driver.title)
+                    with open("test.txt","w",encoding="utf-8") as f_error:
+                        f_error.write(driver.page_source)
+                    time.sleep(300)
+                    continue
+                else:
+                    driver.quit()
+                    # kill_process('chromedriver')
+                    gc.collect()
+                    driver = get_driver(chrome_path,chromedriver_path,ua)
             else:
                 # 源码ok再写入
                 if divs_res:
                     real_urls_rank = self.get_real_urls(divs_res)
-                    real_urls = []
                     for my_url,my_order,my_attr in real_urls_rank:
-                        real_urls.append(my_url)
                         f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,my_attr,group))
                     f_all.flush()
-                    domain_str = self.get_domains(real_urls)
+                    domain_url_dicts = self.get_top_domains(real_urls_rank)
+                    domain_all = domain_url_dicts.keys()
                     # 目标站点是否出现
                     for domain in domains:
-                        if domain not in domain_str:
+                        if domain not in domain_all:
                               f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group,domain))
                         else:
-                            for my_url,my_order,my_attr in real_urls_rank:
-                                if domain in str(my_url):
-                                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,my_url,my_order,group,domain,my_attr))
-                                    print(my_url, my_order)
-                                    break # 取第一个排名url
+                            my_url,my_order,my_attr = domain_url_dicts[domain]
+                            f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,my_url,my_order,group,domain,my_attr))
+                            print(my_url, my_order)
                 f.flush()
-
             finally:
                 del kwd,group
                 gc.collect()
                 q.task_done()
-                time.sleep(25)
+                time.sleep(2)
                 
 
 if __name__ == "__main__":
     start = time.time()
     local_time = time.localtime()
     today = time.strftime('%Y%m%d',local_time)
-    domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com'] # 目标域名
+    user_agents = get_ua('ua_mo.txt')
+    domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com','ke.com'] # 目标域名
     my_domain = '5i5j.com' # 自己域名
     js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight',random.random())
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
@@ -346,8 +405,8 @@ if __name__ == "__main__":
     q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
-    f = open('{0}bdmo1_index_info.txt'.format(today),'a',encoding="utf-8")
-    f_all = open('{0}bdmo1_index_all.txt'.format(today),'a',encoding="utf-8")
+    f = open('{0}bdmo1_index_info.txt'.format(today),'a+',encoding="utf-8")
+    f_all = open('{0}bdmo1_index_all.txt'.format(today),'a+',encoding="utf-8")
     file_path = f.name
     # 设置线程数
     for i in list(range(1)):

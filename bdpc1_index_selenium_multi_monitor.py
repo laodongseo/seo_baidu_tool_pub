@@ -1,8 +1,8 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-必须单线程,1是因为百度反爬2是写入文件未加锁可能错乱
+必须单线程,1是因为百度反爬,2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
-selenium不支持长时间操作浏览器,为了解决该问题代码检测抛出异常就重启
+长期操作浏览器浏览器会崩溃,为了解决该问题代码检测抛出异常就重启(验证码页面也会抛出异常重启)
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
@@ -135,15 +135,18 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_experimental_option('useAutomationExtension', False)
     No_Image_loading = {"profile.managed_default_content_settings.images": 2}
     option.add_experimental_option("prefs", No_Image_loading)
+    # 屏蔽webdriver特征
+    option.add_argument("--disable-blink-features")
+    option.add_argument("--disable-blink-features=AutomationControlled")
     driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
-    # 屏蔽特征
-    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-        "source": """
-    Object.defineProperty(navigator, 'webdriver', {
-      get: () => undefined
-    })
-  """
-    })
+    # 屏蔽true特征
+  #   driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+  #       "source": """
+  #   Object.defineProperty(navigator, 'webdriver', {
+  #     get: () => undefined
+  #   })
+  # """
+  #   })
     return driver
 
 
@@ -223,6 +226,7 @@ class bdpcIndexMonitor(threading.Thread):
         driver.execute_script(click_js)  # 点击搜索
 
         # 等待首页元素加载完毕
+        # 此处异常由run函数的try捕获
         bottom = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.ID, "help"))
         )
@@ -280,7 +284,7 @@ class bdpcIndexMonitor(threading.Thread):
                 r = requests.head(encrypt_url, headers=my_header,timeout=10)
             except Exception as e:
                 print(encrypt_url, '解密失败', e)
-                time.sleep(120)
+                time.sleep(300)
                 if retry > 0:
                     self.decrypt_url(encrypt_url, my_header, retry - 1)
             else:
@@ -347,12 +351,16 @@ class bdpcIndexMonitor(threading.Thread):
         while 1:
             group_kwd = q.get()
             group, kwd = group_kwd
-            print(group, kwd)
+            print(group,kwd)
             try:
                 html,now_url = self.get_html(kwd)
+                print('----')
                 encrypt_url_list_rank, real_urls_rank = self.get_encrpt_urls(html, now_url)
             except Exception as e:
-                traceback.print_exc(file=open('log.txt', 'a+'))
+                traceback.print_exc(file=open('log.txt', 'a'))
+                if '安全验证' in driver.title:
+                    print(driver.title,'暂停180s')
+                    time.sleep(180)
                 print(e, '重启selenium')
                 driver.quit()
                 # kill_process('chromedriver')
@@ -363,7 +371,7 @@ class bdpcIndexMonitor(threading.Thread):
                 if encrypt_url_list_rank:
                     for my_serp_url, my_order, tpl in encrypt_url_list_rank:
                         my_real_url = self.decrypt_url(my_serp_url, my_header)
-                        time.sleep(0.2)
+                        time.sleep(0.25)
                         real_urls_rank.append((my_real_url, my_order, tpl))
                     
                     for my_real_url, my_order, tpl in real_urls_rank:
@@ -400,7 +408,7 @@ if __name__ == "__main__":
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q, group_list = bdpcIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数

@@ -2,7 +2,7 @@
 """
 必须单线程,1是因为百度反爬,2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
-selenium不支持长时间操作浏览器,为了解决该问题代码检测抛出异常就重启
+长期操作浏览器浏览器会崩溃,为了解决该问题代码检测抛出异常就重启(验证码页面也会抛出异常重启)
 有异常会写入log.txt
 多个登录账号后的cookie轮换访问
 功能:
@@ -352,19 +352,17 @@ class bdmoIndexMonitor(threading.Thread):
                 divs_res = self.get_divs(html,now_url)
             except Exception as e:
                 print(e)
-                traceback.print_exc(file=open('log.txt', 'w'))
-                msg = e.msg if 'msg' in dir(e) else ''
-                if 'error_bottom' in msg:
-                    print('暂停300s',driver.title)
-                    with open("test.txt","w",encoding="utf-8") as f_error:
-                        f_error.write(driver.page_source)
+                traceback.print_exc(file=open('log.txt', 'a'))
+                # msg = e.msg if 'msg' in dir(e) else ''
+                # if 'error_bottom' in msg:
+                if '安全验证' in driver.title:
+                    print(driver.title,'暂停300s')
                     time.sleep(300)
-                    continue
-                else:
-                    driver.quit()
-                    # kill_process('chromedriver')
-                    gc.collect()
-                    driver = get_driver(chrome_path,chromedriver_path,ua)
+                print('重启selenium...')
+                driver.quit()
+                # kill_process('chromedriver')
+                gc.collect()
+                driver = get_driver(chrome_path,chromedriver_path,ua)
             else:
                 # 源码ok再写入
                 if divs_res:
@@ -402,7 +400,7 @@ if __name__ == "__main__":
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'a+',encoding="utf-8")

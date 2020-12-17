@@ -358,9 +358,6 @@ class bdpcIndexMonitor(threading.Thread):
                 encrypt_url_list_rank, real_urls_rank = self.get_encrpt_urls(html, now_url)
             except Exception as e:
                 traceback.print_exc(file=open('log.txt', 'a'))
-                if '安全验证' in driver.title:
-                    print(driver.title,'暂停180s')
-                    time.sleep(180)
                 print(e, '重启selenium')
                 driver.quit()
                 # kill_process('chromedriver')

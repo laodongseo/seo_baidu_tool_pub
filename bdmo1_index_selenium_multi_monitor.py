@@ -355,9 +355,7 @@ class bdmoIndexMonitor(threading.Thread):
                 traceback.print_exc(file=open('log.txt', 'a'))
                 # msg = e.msg if 'msg' in dir(e) else ''
                 # if 'error_bottom' in msg:
-                if '安全验证' in driver.title:
-                    print(driver.title,'暂停300s')
-                    time.sleep(300)
+                    # pass
                 print('重启selenium...')
                 driver.quit()
                 # kill_process('chromedriver')

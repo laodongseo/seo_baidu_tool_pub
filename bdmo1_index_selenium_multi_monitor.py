@@ -49,9 +49,9 @@ import tld
 
 
 def get_ua(filepath):
-    cookie_list = []
-    cookie_list = [line.strip() for line in open(filepath,'r',encoding='utf-8')]
-    return cookie_list
+    ua_list = []
+    ua_list = [line.strip() for line in open(filepath,'r',encoding='utf-8')]
+    return ua_list
 
 
 # 字符串cookie转为字典

@@ -241,8 +241,8 @@ class bdpcIndexMonitor(threading.Thread):
         doc = pq(html)
         title = doc('title').text()
         if '_百度搜索' in title and 'https://www.baidu.com/' in url:
-            div_list = doc('.content_left .result').items()  # 自然排名
-            div_op_list = doc('.content_left .result-op').items()  # 非自然排名
+            div_list = doc('#content_left .result').items()  # 自然排名
+            div_op_list = doc('#content_left .result-op').items()  # 非自然排名
             for div in div_list:
                 rank = div.attr('id') if div.attr('id') else 'id_xxx'
                 tpl = div.attr('tpl') if div.attr('tpl') else 'tpl_xxx'

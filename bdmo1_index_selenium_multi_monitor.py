@@ -1,11 +1,11 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
+不要放手机百度app的UA,这样是无限下拉造成判断失误
 必须单线程,1是因为百度反爬,2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 长期操作浏览器浏览器会崩溃,为了解决该问题代码检测抛出异常就重启(验证码页面也会抛出异常重启)
-有异常会写入log_mo.txt
-模拟多个ua访问,准备ua_mo.txt
-20201219增加提取问答列表聚合样式
+有异常会写入log.txt
+多个登录账号后的cookie轮换访问
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)采集serp所有url,提取域名并统计各域名首页覆盖率
@@ -48,10 +48,11 @@ import tld
 
 
 
+# 杀死进程
 def get_ua(filepath):
-    ua_list = []
-    ua_list = [line.strip() for line in open(filepath,'r',encoding='utf-8')]
-    return ua_list
+    cookie_list = []
+    cookie_list = [line.strip() for line in open(filepath,'r',encoding='utf-8')]
+    return cookie_list
 
 
 # 字符串cookie转为字典
@@ -147,7 +148,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-features=NetworkService")
     # option.add_argument("--window-size=1920x1080")
     option.add_argument("--disable-features=VizDisplayCompositor")
-    # option.add_argument('headless')
+    option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
     option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
     option.add_argument('--ignore-certificate-errors')
@@ -161,7 +162,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     # 屏蔽webdriver特征
     option.add_argument("--disable-blink-features")
     option.add_argument("--disable-blink-features=AutomationControlled")
-    driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
+    driver = webdriver.Chrome(options=option,executable_path=chromedriver_path )
     # 屏蔽特征
   #   driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
   #       "source": """
@@ -212,6 +213,9 @@ class bdmoIndexMonitor(threading.Thread):
     def get_html(self,kwd,user_agent):
         global driver
         html = now_url = ''
+        # driver.get('https://m.baidu.com/')
+        # for k, v in cookie_dict.items():
+        #     driver.add_cookie({'name': k, 'value': v})
         driver.execute_cdp_cmd("Network.enable", {})
         driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": {"User-Agent":user_agent}})
         driver.get('https://m.baidu.com/')
@@ -284,12 +288,12 @@ class bdmoIndexMonitor(threading.Thread):
                             if data_log_ugc:
                                 link = data_log_ugc['mu']  if 'mu' in data_log_ugc else None # mu可能为空或者不存在
                                 link = 'https://m.baidu.com{0}'.format(link) if link != None else None
-                        # 提取问答聚合
-                        if not link:
-                            link = a.attr('href')
-                        # 一般为卡片样式,链接太多,不提取了
-                        if not link:
-                            pass
+                                # 提取问答聚合
+                                if not link:
+                                    link = a.attr('href')
+                                # 一般为卡片样式,链接太多,不提取了
+                                if not link:
+                                    pass
                         real_urls_rank.append((link,rank,srcid))
         return real_urls_rank
 
@@ -345,7 +349,6 @@ class bdmoIndexMonitor(threading.Thread):
         while 1:
             group_kwd = q.get()
             group,kwd = group_kwd
-            kwd = '莘庄二手房'
             print(group,kwd)
             try:
                 user_agent = random.choice(user_agents)
@@ -353,7 +356,8 @@ class bdmoIndexMonitor(threading.Thread):
                 divs_res = self.get_divs(html,now_url)
             except Exception as e:
                 print(e)
-                traceback.print_exc(file=open('log_mo.txt', 'a'))
+                q.put(group_kwd)
+                traceback.print_exc(file=open('log.txt', 'a'))
                 # msg = e.msg if 'msg' in dir(e) else ''
                 # if 'error_bottom' in msg:
                     # pass
@@ -385,7 +389,7 @@ class bdmoIndexMonitor(threading.Thread):
                 gc.collect()
                 q.task_done()
                 time.sleep(2)
-
+                
 
 if __name__ == "__main__":
     start = time.time()
@@ -399,7 +403,7 @@ if __name__ == "__main__":
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q,group_list = bdmoIndexMonitor.read_excel('2020kwd_url_core_city_unique.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'a+',encoding="utf-8")

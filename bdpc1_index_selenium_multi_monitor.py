@@ -138,7 +138,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     # 屏蔽webdriver特征
     option.add_argument("--disable-blink-features")
     option.add_argument("--disable-blink-features=AutomationControlled")
-    driver = webdriver.Chrome(options=option, chrome_options=option,executable_path=chromedriver_path )
+    driver = webdriver.Chrome(options=option,executable_path=chromedriver_path )
     # 屏蔽true特征
   #   driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
   #       "source": """
@@ -357,6 +357,7 @@ class bdpcIndexMonitor(threading.Thread):
             except Exception as e:
                 traceback.print_exc(file=open('log.txt', 'a'))
                 print(e, '重启selenium')
+                q.put(group_kwd)
                 driver.quit()
                 # kill_process('chromedriver')
                 gc.collect()

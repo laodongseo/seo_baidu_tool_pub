@@ -1,9 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-必须单线程,1是因为百度反爬2是多线程写入文件不加锁可能错乱
+必须单线程,1是因为百度反爬
 selenium驱动浏览器的方式 默认为无头模式,
 长期操作浏览器浏览器会崩溃,为了解决该问题代码检测抛出异常就重启(验证码页面也会抛出异常重启)
-功能:前5页抓取
+功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
    3)通过tpl属性记录serp排名url的特征
@@ -15,9 +15,6 @@ selenium驱动浏览器的方式 默认为无头模式,
 结果:
     bdpc1_page5_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdpc1_page5_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本统计
-    bdpc1_page5.xlsx:自己站每类词首页词数
-    bdpc1_page5_domains.xlsx:各监控站点每类词的首页词数
-    bdpc1_page5_domains.txt:各监控站点每类词的首页词数
 """
 
 from pyquery import PyQuery as pq
@@ -53,66 +50,6 @@ def kill_process(*p_names):
     except Exception as e:
         pass
     time.sleep(2)
-
-
-# 计算最终结果
-def get_result(file_path, result):
-    for line in open(file_path, 'r', encoding='utf-8'):
-        line = line.strip().split('\t')
-        rank = line[2]
-        group = line[3]
-        domain = line[4]
-        if rank != '无':
-            result[domain][group]['首页'] += 1
-        result[domain][group]['总词数'] += 1
-    return result
-
-
-# 写txt,所有监控域名的结果
-def write_domains_txt(result_last):
-    with open('{0}bdpc1_page5_domains.txt'.format(today), 'w', encoding="utf-8") as f_res:
-        f_res.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format('日期', '域名', '词类', '首页词数', '查询词数'))
-        for now_domain, dict_value in result_last.items():
-            for group, dict_page5_all in dict_value.items():
-                f_res.write('{0}\t{1}\t{2}\t'.format(today, now_domain, group))
-                for key, value in dict_page5_all.items():
-                    f_res.write(str(value) + '\t')
-                f_res.write('\n')
-
-
-# 写excel
-def write_myexcel(group_list, result_last, today, my_domain):
-    wb = Workbook()
-    wb_all = Workbook()
-    # 创建sheet写表头
-    for group in group_list:
-        sheet_num = 0
-        wb.create_sheet(u'{0}'.format(group), index=sheet_num)
-        wb_all.create_sheet(u'{0}'.format(group), index=sheet_num)
-        row_first = ['日期', '首页', '总词数']
-        row_first2 = ['日期', '域名', '首页', '总词数']
-        # 写表头
-        wb[group].append(row_first)
-        wb_all[group].append(row_first2)
-        sheet_num += 1
-    # 写内容
-    for domain, dict_value in result_last.items():
-        if domain == my_domain:
-            for group, dict_page5_all in dict_value.items():
-                # 写数据
-                row_value = [today]
-                for key, value in dict_page5_all.items():
-                    row_value.append(value)
-                wb[u'{0}'.format(group)].append(row_value)
-
-        for group, dict_page5_all in dict_value.items():
-            # 写数据
-            row_value = [today, domain]
-            for key, value in dict_page5_all.items():
-                row_value.append(value)
-            wb_all[u'{0}'.format(group)].append(row_value)
-    wb.save('{0}bdpc1_page5.xlsx'.format(today))
-    wb_all.save('{0}bdpc1_page5_domains.xlsx'.format(today))
 
 
 def get_driver(chrome_path,chromedriver_path,ua):
@@ -284,9 +221,12 @@ class bdpcIndexMonitor(threading.Thread):
                 r = requests.head(encrypt_url, headers=my_header,timeout=10)
             except Exception as e:
                 print(encrypt_url, '解密失败', e)
-                time.sleep(300)
+                time.sleep(200)
                 if retry > 0:
+                    my_header = get_header()
                     self.decrypt_url(encrypt_url, my_header, retry - 1)
+                else:
+                    real_url = encrypt_url
             else:
                 real_url = r.headers['Location'] if 'Location' in r.headers else None
         return real_url
@@ -371,6 +311,7 @@ class bdpcIndexMonitor(threading.Thread):
             html = ''
             encrypt_url_list_rank_all = [] # 存储前五页url
             real_urls_rank_all = [] # 存储前五页url
+            # 外层加异常,五页都成功后再写入
             try:
                 for page_num,page_text in page_dict.items():
                     if page_num == 1: 
@@ -401,14 +342,14 @@ class bdpcIndexMonitor(threading.Thread):
                 print(e, '重启selenium')
                 q.put(group_kwd)
                 driver.quit()
-                kill_process('chromedriver.exe','chrome.exe')
+                # kill_process('chromedriver.exe','chrome.exe')
                 gc.collect()
                 driver = get_driver(chrome_path,chromedriver_path,ua)
             else:
                 for my_serp_url, my_order, tpl, page_text in encrypt_url_list_rank_all:
                     my_header = get_header()
                     my_real_url = self.decrypt_url(my_serp_url, my_header)
-                    time.sleep(0.2)
+                    time.sleep(0.4) # 连续解密太快易被反爬
                     real_urls_rank_all.append((my_real_url, my_order, tpl, page_text))
                 for my_real_url, my_order, tpl, page_text in real_urls_rank_all:
                     f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, str(my_real_url), my_order, tpl, page_text,group))
@@ -417,14 +358,14 @@ class bdpcIndexMonitor(threading.Thread):
 
                 for domain in target_domains:
                     if domain not in all_page_domains:
-                        f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group, domain))
+                        f.write(f'{kwd}\t无\t无\t{group}\t{domain}\t无\t无\n')
                     else:
                         for page_text,elements in domain_url_dict_all.items():
                             domains_now = self.extract_top_domains(elements)
                             if domain in domains_now:
                                 for my_url,my_order,tpl in elements:
                                         if domain in my_url:
-                                            f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\n'.format(kwd, str(my_url), my_order, group, domain,tpl,page_text))
+                                            f.write(f'{kwd}\t{str(my_url)}\t{my_order}\t{group}\t{domain}\t{tpl}\t{page_text}\n')
                                             break
                                 break
 
@@ -447,19 +388,19 @@ if __name__ == "__main__":
     now_page_js = """var now_page = document.querySelector("#page > div > strong").innerText;return now_page"""
 
     list_headers = [i.strip() for i in open('headers.txt', 'r', encoding='utf-8')]
-    list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
+    # list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
     target_domains = ['zhangqiaokeyan.com']  # 目标域名
     my_domain = '5i5j.com'
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q, group_list = bdpcIndexMonitor.read_excel('kwd.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('kwd2.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数
-    f = open('{0}bdpc1_page5_info.txt'.format(today), 'w+', encoding="utf-8")
-    f_all = open('{0}bdpc1_page5_all.txt'.format(today), 'w+', encoding="utf-8")
+    f = open('{0}bdpc1_page5_info.txt'.format(today), 'a+', encoding="utf-8")
+    f_all = open('{0}bdpc1_page5_all.txt'.format(today), 'a+', encoding="utf-8")
     file_path = f.name
     # 设置线程数
     for i in list(range(1)):
@@ -469,14 +410,5 @@ if __name__ == "__main__":
     q.join()
     f.close()
     f_all.close()
-    # 根据bdpc1_page5_info.txt计算结果
-    result_last = get_result(file_path, result)
-    # 写入txt文件
-    write_domains_txt(result_last)
-    # 写入excel
-    write_myexcel(group_list, result_last, today, my_domain)
-    # 统计查询成功的词数
-    # with open(file_path, 'r', encoding='utf-8') as fp:
-    #     success = int(sum(1 for x in fp) / len(target_domains))
     end = time.time()
     print('关键词任务共{0}个,耗时{2}min'.format(all_num,(end - start) / 60))

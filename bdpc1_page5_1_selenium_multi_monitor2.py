@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-线程设为1,一是因为百度反爬,二是脚本没加锁,多线程写入文件可能错乱
+设为单线程,1是因为百度反爬,2是没加锁多线程写入可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 长期操作浏览器浏览器会崩溃,为了解决该问题代码检测抛出异常就重启(验证码页面也会抛出异常重启)
 功能:
@@ -15,6 +15,9 @@ selenium驱动浏览器的方式 默认为无头模式,
 结果:
     bdpc1_page5_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdpc1_page5_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本统计
+    bdpc1_page5.xlsx:自己站每类词首页词数
+    bdpc1_page5_domains.xlsx:各监控站点每类词的首页词数
+    bdpc1_page5_domains.txt:各监控站点每类词的首页词数
 """
 
 from pyquery import PyQuery as pq
@@ -64,7 +67,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-features=NetworkService")
     # option.add_argument("--window-size=1920x1080")
     option.add_argument("--disable-features=VizDisplayCompositor")
-    option.add_argument('headless')
+    # option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
     option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
     option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
@@ -218,7 +221,7 @@ class bdpcIndexMonitor(threading.Thread):
         if encrypt_url:
             try:
                 encrypt_url = encrypt_url.replace('http://', 'https://') if 'https://' not in encrypt_url else encrypt_url
-                r = requests.head(encrypt_url, headers=my_header,timeout=10)
+                r = requests.head(encrypt_url, headers=my_header,timeout=20)
             except Exception as e:
                 print(encrypt_url, '解密失败', e)
                 time.sleep(200)
@@ -279,22 +282,23 @@ class bdpcIndexMonitor(threading.Thread):
         domain_url_dict_all = {}
         all_page_domains = set()
         for real_url, my_order, tpl,page_text in real_urls_rank:
-            domain_url_dict_all[page_text] = []
+            domain_url_dict_all[page_text] = {}
 
         for real_url, my_order, tpl,page_text in real_urls_rank:
             if real_url:
                 top_domain = self.get_top_domain(real_url)
                 all_page_domains.add(top_domain)
-                element = real_url,my_order,tpl
-                domain_url_dict_all[page_text].append(element)
+                serp_element = real_url,my_order,tpl
+                # 一个词某域名多个url有排名,算一次
+                domain_url_dict_all[page_text][top_domain] = (real_url,my_order,tpl) if top_domain not in domain_url_dict_all[page_text] else domain_url_dict_all[page_text][top_domain]
 
         return domain_url_dict_all,all_page_domains
 
 
     # 获取某词serp源码顶级域名
-    def extract_top_domains(self,elements):
+    def extract_top_domains(self,serp_elements):
         top_domains = []
-        for real_url, my_order, tpl in elements:
+        for real_url, my_order, tpl in serp_elements:
             if real_url:
                 top_domain = self.get_top_domain(real_url)
                 top_domains.append(top_domain)
@@ -349,24 +353,24 @@ class bdpcIndexMonitor(threading.Thread):
                 for my_serp_url, my_order, tpl, page_text in encrypt_url_list_rank_all:
                     my_header = get_header()
                     my_real_url = self.decrypt_url(my_serp_url, my_header)
-                    time.sleep(0.4) # 连续解密太快易被反爬
+                    time.sleep(0.25) # 连续解密太快易被反爬
                     real_urls_rank_all.append((my_real_url, my_order, tpl, page_text))
                 for my_real_url, my_order, tpl, page_text in real_urls_rank_all:
                     f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, str(my_real_url), my_order, tpl, page_text,group))
 
-                domain_url_dict_all,all_page_domains = self.get_top_domains_all_page(real_urls_rank_all)
+                domain_url_dict_all_page,all_page_domains = self.get_top_domains_all_page(real_urls_rank_all)
 
                 for domain in target_domains:
                     if domain not in all_page_domains:
                         f.write(f'{kwd}\t无\t无\t{group}\t{domain}\t无\t无\n')
                     else:
-                        for page_text,elements in domain_url_dict_all.items():
-                            domains_now = self.extract_top_domains(elements)
-                            if domain in domains_now:
-                                for my_url,my_order,tpl in elements:
-                                        if domain in my_url:
-                                            f.write(f'{kwd}\t{str(my_url)}\t{my_order}\t{group}\t{domain}\t{tpl}\t{page_text}\n')
-                                            break
+                        for page_text,domain_url_dicts in domain_url_dict_all_page.items():
+                            # print(domain_url_dicts)
+                            domains_now_page = domain_url_dicts.keys()
+                            if domain in domains_now_page:
+                                # my_url可能为None
+                                my_url,my_order,tpl = domain_url_dicts[domain]
+                                f.write(f'{kwd}\t{str(my_url)}\t{my_order}\t{group}\t{domain}\t{tpl}\t{page_text}\n')
                                 break
 
                 f.flush()
@@ -389,18 +393,18 @@ if __name__ == "__main__":
 
     list_headers = [i.strip() for i in open('headers.txt', 'r', encoding='utf-8')]
     # list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
-    target_domains = ['zhangqiaokeyan.com']  # 目标域名
+    target_domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com','ke.com']  # 目标域名
     my_domain = '5i5j.com'
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q, group_list = bdpcIndexMonitor.read_excel('kwd2.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('2021xiaoqu_kwd_city_bj.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数
-    f = open('{0}bdpc1_page5_info.txt'.format(today), 'a+', encoding="utf-8")
-    f_all = open('{0}bdpc1_page5_all.txt'.format(today), 'a+', encoding="utf-8")
+    f = open('{0}bdpc1_page5_info.txt'.format(today), 'w+', encoding="utf-8")
+    f_all = open('{0}bdpc1_page5_all.txt'.format(today), 'w+', encoding="utf-8")
     file_path = f.name
     # 设置线程数
     for i in list(range(1)):

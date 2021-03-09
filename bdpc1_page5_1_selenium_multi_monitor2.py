@@ -1,8 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-设为单线程,1是因为百度反爬,2是没加锁多线程写入可能错乱
+设为单线程,1是因为百度反爬,连续解密url会被禁止,2是没加锁多线程写入可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 长期操作浏览器浏览器会崩溃,为了解决该问题代码检测抛出异常就重启(验证码页面也会抛出异常重启)
+因为存在崩溃,所以翻页判断不能用死循环(翻页成功恰好崩溃就会陷入死循环),也得用元素等待
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
@@ -149,7 +150,6 @@ class bdpcIndexMonitor(threading.Thread):
         global driver
         html = now_url = ''
         driver.get('https://www.baidu.com/')
-        # exit()
         input = WebDriverWait(driver, 30).until(
             EC.visibility_of_element_located((By.ID, "kw"))
         )
@@ -170,8 +170,6 @@ class bdpcIndexMonitor(threading.Thread):
         bottom = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.ID, "help"))
         )
-        # 页面下拉
-        js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight', random.random() / 5)
         driver.execute_script(js_xiala)
         html = driver.page_source
         now_url = driver.current_url
@@ -327,22 +325,27 @@ class bdpcIndexMonitor(threading.Thread):
                             # 点击下一页
                             driver.execute_script(next_page_click_js)
                             # 检测当前url是否为翻页url
-                            while True:
-                                now_url = driver.current_url
-                                if 'pn={0}0'.format(page_num - 1) in driver.current_url:
-                                    break
+                            # page_num_inurl = page_num -1
+                            # fanye_url = WebDriverWait(driver, 20).until(EC.title_contains(f'pn={page_num_inurl}0'))
+                            # while True:
+                            #     now_url = driver.current_url
+                            #     if 'pn={0}0'.format(page_num - 1) in driver.current_url:
+                            #         break
                             # 检测当前源码是否为翻页源码
-                            while True:
-                                now_page = driver.execute_script(now_page_js)
-                                if int(now_page) == page_num:
-                                    break
+                            # driver.execute_script(js_xiala)
+                            fanye_html = WebDriverWait(driver, 20).until(EC.text_to_be_present_in_element((By.XPATH, '//*[@id="page"]/div/strong/span[2]'),str(page_num)))
+                            driver.execute_script(js_xiala)
+                            # while True:
+                            #     now_page = driver.execute_script(now_page_js)
+                            #     if int(now_page) == page_num:
+                            #         break
                             # 翻页执行成功后获取源码
                             html, now_url = driver.page_source, driver.current_url
                     encrypt_url_list_rank, real_urls_rank = self.get_encrpt_urls(html, now_url,page_text)
                     encrypt_url_list_rank_all.extend(encrypt_url_list_rank)
                     real_urls_rank_all.extend(real_urls_rank)
             except Exception as e:
-                traceback.print_exc(file=open('log.txt', 'a'))
+                traceback.print_exc(file=open('log.txt', 'w'))
                 print(e, '重启selenium')
                 q.put(group_kwd)
                 driver.quit()
@@ -390,6 +393,8 @@ if __name__ == "__main__":
     next_page_click_js = """var pages =document.querySelectorAll('.n');var next_page = pages[pages.length-1];next_page.click()"""
     # 获取当前页码
     now_page_js = """var now_page = document.querySelector("#page > div > strong").innerText;return now_page"""
+    # 页面下拉
+    js_xiala = 'window.scrollBy(0,{0} * {1})'.format('document.body.scrollHeight', random.random() / 5)
 
     list_headers = [i.strip() for i in open('headers.txt', 'r', encoding='utf-8')]
     # list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]

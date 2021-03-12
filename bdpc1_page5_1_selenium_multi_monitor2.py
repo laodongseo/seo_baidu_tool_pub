@@ -3,7 +3,8 @@
 设为单线程,1是因为百度反爬,连续解密url会被禁止,2是没加锁多线程写入可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 长期操作浏览器浏览器会崩溃,为了解决该问题代码检测抛出异常就重启(验证码页面也会抛出异常重启)
-因为存在崩溃,所以翻页判断不能用死循环(翻页成功恰好崩溃就会陷入死循环),也得用元素等待
+浏览器存在崩溃,所以翻页判断不能用死循环(翻页成功恰好崩溃就会陷入死循环),得用元素等待
+重启前杀死webdriver启动的谷歌进程及webdriver本身
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
@@ -14,11 +15,8 @@ selenium驱动浏览器的方式 默认为无头模式,
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
   3)kwd.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
-    bdpc1_page5_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
-    bdpc1_page5_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本统计
-    bdpc1_page5.xlsx:自己站每类词首页词数
-    bdpc1_page5_domains.xlsx:各监控站点每类词的首页词数
-    bdpc1_page5_domains.txt:各监控站点每类词的首页词数
+    bdpc1_page5_info.txt:前五页各监控站点词的排名及url,如有2个url排名,只取第一个就结束
+    bdpc1_page5_all.txt:前五页serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本统计
 """
 
 from pyquery import PyQuery as pq
@@ -42,18 +40,40 @@ from selenium.webdriver.chrome.options import Options
 import random
 import traceback
 import tld
-
+import psutil
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-# 杀死进程
-def kill_process(*p_names):
+# 获取selenium启动的浏览器pid
+def get_webdriver_chrome_ids(driver):
+    all_ids = []
+    main_id = driver.service.process.pid
+    all_ids.append(main_id)
+    p = psutil.Process(main_id)
+    child_ids = p.children(recursive=True)
+    for id_obj in child_ids:
+        all_ids.append(id_obj.pid)
+    return all_ids
+
+
+# 根据pid杀死进程
+def kill_process(p_ids):
     try:
-        for p_name in p_names:
-            os.system('taskkill /im {0} /F'.format(p_name))
+        for p_id in p_ids:
+            os.system(f'taskkill  /f /pid {p_id}')
     except Exception as e:
         pass
     time.sleep(2)
+
+
+# 根据进程名获取pid,传参chromedriver
+def get_pid_from_name(name):
+    chromedriver_pids = []
+    pids = psutil.process_iter()
+    for pid in pids:
+        if(pid.name() == name):
+            chromedriver_pids.append(pid.pid)
+    return chromedriver_pids
 
 
 def get_driver(chrome_path,chromedriver_path,ua):
@@ -79,7 +99,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     # 屏蔽webdriver特征
     option.add_argument("--disable-blink-features")
     option.add_argument("--disable-blink-features=AutomationControlled")
-    driver = webdriver.Chrome(options=option,executable_path=chromedriver_path )
+    driver = webdriver.Chrome(options=option,executable_path=chromedriver_path)
     # 屏蔽true特征
   #   driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
   #       "source": """
@@ -275,7 +295,7 @@ class bdpcIndexMonitor(threading.Thread):
                 print(e,'top domain:error')
         return top_domain
 
-    # 获取某词所有翻页顶级域名
+    # 获取某词所有翻页顶级域名及页码和域名排名对应关系
     def get_top_domains_all_page(self,real_urls_rank):
         domain_url_dict_all = {}
         all_page_domains = set()
@@ -293,19 +313,10 @@ class bdpcIndexMonitor(threading.Thread):
         return domain_url_dict_all,all_page_domains
 
 
-    # 获取某词serp源码顶级域名
-    def extract_top_domains(self,serp_elements):
-        top_domains = []
-        for real_url, my_order, tpl in serp_elements:
-            if real_url:
-                top_domain = self.get_top_domain(real_url)
-                top_domains.append(top_domain)
-        return top_domains
-
 
     # 线程函数
     def run(self):
-        global driver
+        global driver,webdriver_chrome_ids
         while 1:
             group_kwd = q.get()
             group, kwd = group_kwd
@@ -317,6 +328,7 @@ class bdpcIndexMonitor(threading.Thread):
             try:
                 for page_num,page_text in page_dict.items():
                     if page_num == 1: 
+                        # get_html已检测首页是否加载完
                         html,now_url = self.get_html(kwd)
                     else:
                         doc = pq(str(html))
@@ -324,39 +336,32 @@ class bdpcIndexMonitor(threading.Thread):
                         if '下一页' in str(text_bottom):
                             # 点击下一页
                             driver.execute_script(next_page_click_js)
-                            # 检测当前url是否为翻页url
-                            # page_num_inurl = page_num -1
-                            # fanye_url = WebDriverWait(driver, 20).until(EC.title_contains(f'pn={page_num_inurl}0'))
-                            # while True:
-                            #     now_url = driver.current_url
-                            #     if 'pn={0}0'.format(page_num - 1) in driver.current_url:
-                            #         break
                             # 检测当前源码是否为翻页源码
-                            # driver.execute_script(js_xiala)
                             fanye_html = WebDriverWait(driver, 20).until(EC.text_to_be_present_in_element((By.XPATH, '//*[@id="page"]/div/strong/span[2]'),str(page_num)))
                             driver.execute_script(js_xiala)
-                            # while True:
-                            #     now_page = driver.execute_script(now_page_js)
-                            #     if int(now_page) == page_num:
-                            #         break
-                            # 翻页执行成功后获取源码
                             html, now_url = driver.page_source, driver.current_url
+                        else:
+                            break
                     encrypt_url_list_rank, real_urls_rank = self.get_encrpt_urls(html, now_url,page_text)
                     encrypt_url_list_rank_all.extend(encrypt_url_list_rank)
                     real_urls_rank_all.extend(real_urls_rank)
             except Exception as e:
-                traceback.print_exc(file=open('log.txt', 'w'))
-                print(e, '重启selenium')
+                traceback.print_exc(file=open('log.txt', 'a+'))
+                print(e, '杀死残留进程,重启selenium')
                 q.put(group_kwd)
                 driver.quit()
-                # kill_process('chromedriver.exe','chrome.exe')
-                gc.collect()
+                kill_process(webdriver_chrome_ids)
+                # gc.collect()
                 driver = get_driver(chrome_path,chromedriver_path,ua)
+                chromedriver_pids = get_pid_from_name("chromedriver.exe")
+                webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
+                print(f'chrome的pid:{webdriver_chrome_ids},\nchromedriver的pid:{chromedriver_pids}')
+                webdriver_chrome_ids.extend(chromedriver_pids)
             else:
                 for my_serp_url, my_order, tpl, page_text in encrypt_url_list_rank_all:
                     my_header = get_header()
                     my_real_url = self.decrypt_url(my_serp_url, my_header)
-                    time.sleep(0.25) # 连续解密太快易被反爬
+                    time.sleep(0.22) # 连续解密太快易被反爬
                     real_urls_rank_all.append((my_real_url, my_order, tpl, page_text))
                 for my_real_url, my_order, tpl, page_text in real_urls_rank_all:
                     f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd, str(my_real_url), my_order, tpl, page_text,group))
@@ -403,13 +408,19 @@ if __name__ == "__main__":
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
+
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q, group_list = bdpcIndexMonitor.read_excel('2021xiaoqu_kwd_city_bj.xlsx')  # 关键词队列及分类
+    chromedriver_pids = get_pid_from_name("chromedriver.exe")
+    webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
+    webdriver_chrome_ids.extend(chromedriver_pids)
+    print(f'chrome的pid:{webdriver_chrome_ids},\nchromedriver的pid:{chromedriver_pids}')
+
+    q, group_list = bdpcIndexMonitor.read_excel('2021xiaoqu_kwd_city_sz_.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数
-    f = open('{0}bdpc1_page5_info.txt'.format(today), 'w+', encoding="utf-8")
-    f_all = open('{0}bdpc1_page5_all.txt'.format(today), 'w+', encoding="utf-8")
+    f = open('{0}bdpc1_page5_info.txt'.format(today), 'a+', encoding="utf-8")
+    f_all = open('{0}bdpc1_page5_all.txt'.format(today), 'a+', encoding="utf-8")
     file_path = f.name
     # 设置线程数
     for i in list(range(1)):

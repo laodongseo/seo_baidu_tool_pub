@@ -45,10 +45,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 import traceback
 import tld
+import psutil
 
 
 
-# 杀死进程
+# 获取ua
 def get_ua(filepath):
     cookie_list = []
     cookie_list = [line.strip() for line in open(filepath,'r',encoding='utf-8')]
@@ -66,14 +67,37 @@ def to_dict(cookie_str):
     return cookie
 
 
-# 杀死进程
-def kill_process(p_name):
+# 获取selenium启动的浏览器pid
+def get_webdriver_chrome_ids(driver):
+    all_ids = []
+    main_id = driver.service.process.pid
+    all_ids.append(main_id)
+    p = psutil.Process(main_id)
+    child_ids = p.children(recursive=True)
+    for id_obj in child_ids:
+        all_ids.append(id_obj.pid)
+    return all_ids
+
+
+# 根据pid杀死进程
+def kill_process(p_ids):
     try:
-        os.system('taskkill /im {0}.exe /F'.format(p_name))
+        for p_id in p_ids:
+            os.system(f'taskkill  /f /pid {p_id}')
     except Exception as e:
         pass
-    else:
-        pass
+    time.sleep(2)
+
+
+# 根据进程名获取pid,传参chromedriver
+def get_pid_from_name(name):
+    chromedriver_pids = []
+    pids = psutil.process_iter()
+    for pid in pids:
+        if(pid.name() == name):
+            chromedriver_pids.append(pid.pid)
+    return chromedriver_pids
+
 
 
 # 计算最终结果
@@ -345,7 +369,7 @@ class bdmoIndexMonitor(threading.Thread):
 
     # 线程函数
     def run(self):
-        global driver
+        global driver,webdriver_chrome_ids
         while 1:
             group_kwd = q.get()
             group,kwd = group_kwd
@@ -357,15 +381,19 @@ class bdmoIndexMonitor(threading.Thread):
             except Exception as e:
                 print(e)
                 q.put(group_kwd)
-                traceback.print_exc(file=open('log.txt', 'a'))
+                traceback.print_exc(file=open(f'{today}log.txt', 'a'))
                 # msg = e.msg if 'msg' in dir(e) else ''
                 # if 'error_bottom' in msg:
                     # pass
                 print('重启selenium...')
                 driver.quit()
-                # kill_process('chromedriver')
-                gc.collect()
+                kill_process(webdriver_chrome_ids)
+                # gc.collect()
                 driver = get_driver(chrome_path,chromedriver_path,ua)
+                chromedriver_pids = get_pid_from_name("chromedriver.exe")
+                webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
+                print(f'chrome的pid:{webdriver_chrome_ids},\nchromedriver的pid:{chromedriver_pids}')
+                webdriver_chrome_ids.extend(chromedriver_pids)
             else:
                 # 源码ok再写入
                 if divs_res:
@@ -388,7 +416,7 @@ class bdmoIndexMonitor(threading.Thread):
                 del kwd,group
                 gc.collect()
                 q.task_done()
-                time.sleep(2)
+                time.sleep(1.5)
                 
 
 if __name__ == "__main__":
@@ -403,7 +431,12 @@ if __name__ == "__main__":
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q,group_list = bdmoIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
+    chromedriver_pids = get_pid_from_name("chromedriver.exe")
+    webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
+    webdriver_chrome_ids.extend(chromedriver_pids)
+    print(f'chrome的pid:{webdriver_chrome_ids},\nchromedriver的pid:{chromedriver_pids}')
+
+    q,group_list = bdmoIndexMonitor.read_excel('2021xiaoqu_kwd_city_nj.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
     all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'a+',encoding="utf-8")

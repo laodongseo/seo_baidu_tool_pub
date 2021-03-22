@@ -41,18 +41,41 @@ from selenium.webdriver.chrome.options import Options
 import random
 import traceback
 import tld
+import psutil
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-# 杀死进程
-def kill_process(p_name):
+# 获取selenium启动的浏览器pid
+def get_webdriver_chrome_ids(driver):
+    all_ids = []
+    main_id = driver.service.process.pid
+    all_ids.append(main_id)
+    p = psutil.Process(main_id)
+    child_ids = p.children(recursive=True)
+    for id_obj in child_ids:
+        all_ids.append(id_obj.pid)
+    return all_ids
+
+
+# 根据pid杀死进程
+def kill_process(p_ids):
     try:
-        os.system('taskkill /im {0}.exe /F'.format(p_name))
+        for p_id in p_ids:
+            os.system(f'taskkill  /f /pid {p_id}')
     except Exception as e:
         pass
-    else:
-        pass
+    time.sleep(2)
+
+
+# 根据进程名获取pid,传参chromedriver
+def get_pid_from_name(name):
+    chromedriver_pids = []
+    pids = psutil.process_iter()
+    for pid in pids:
+        if(pid.name() == name):
+            chromedriver_pids.append(pid.pid)
+    return chromedriver_pids
 
 
 # 计算最终结果
@@ -281,7 +304,7 @@ class bdpcIndexMonitor(threading.Thread):
         if encrypt_url:
             try:
                 encrypt_url = encrypt_url.replace('http://', 'https://') if 'https://' not in encrypt_url else encrypt_url
-                r = requests.head(encrypt_url, headers=my_header,timeout=10)
+                r = requests.head(encrypt_url, headers=my_header,timeout=60)
             except Exception as e:
                 print(encrypt_url, '解密失败', e)
                 time.sleep(300)
@@ -334,6 +357,7 @@ class bdpcIndexMonitor(threading.Thread):
                 print(e,'top domain:error')
         return top_domain
 
+
     # 获取某词serp源码首页排名的顶级域名
     def get_top_domains(self,real_urls_rank):
         domain_url_dicts = {}
@@ -344,9 +368,10 @@ class bdpcIndexMonitor(threading.Thread):
                 domain_url_dicts[top_domain] = (real_url,my_order,tpl) if top_domain not in domain_url_dicts else domain_url_dicts[top_domain]
         return domain_url_dicts
 
+
     # 线程函数
     def run(self):
-        global driver
+        global driver,webdriver_chrome_ids
         while 1:
             group_kwd = q.get()
             group, kwd = group_kwd
@@ -355,13 +380,17 @@ class bdpcIndexMonitor(threading.Thread):
                 html,now_url = self.get_html(kwd)
                 encrypt_url_list_rank, real_urls_rank = self.get_encrpt_urls(html, now_url)
             except Exception as e:
-                traceback.print_exc(file=open('log.txt', 'a'))
-                print(e, '重启selenium')
+                traceback.print_exc(file=open(f'{today}log.txt', 'a'))
+                print(e, '杀死残留进程,重启selenium')
                 q.put(group_kwd)
                 driver.quit()
-                # kill_process('chromedriver')
-                gc.collect()
+                kill_process(webdriver_chrome_ids)
+                # gc.collect()
                 driver = get_driver(chrome_path,chromedriver_path,ua)
+                chromedriver_pids = get_pid_from_name("chromedriver.exe")
+                webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
+                print(f'chrome的pid:{webdriver_chrome_ids},\nchromedriver的pid:{chromedriver_pids}')
+                webdriver_chrome_ids.extend(chromedriver_pids)
             else:
                 # 源码ok再写入
                 if encrypt_url_list_rank:
@@ -376,6 +405,7 @@ class bdpcIndexMonitor(threading.Thread):
 
                     domain_url_dicts = self.get_top_domains(real_urls_rank)
                     if domain_url_dicts:
+                        # serp源码排名url的顶级域名
                         domain_all = domain_url_dicts.keys()
                         # 目标站点是否出现
                         for domain in domains:
@@ -398,14 +428,19 @@ if __name__ == "__main__":
     local_time = time.localtime()
     today = time.strftime('%Y%m%d', local_time)
     list_headers = [i.strip() for i in open('headers.txt', 'r', encoding='utf-8')]
-    list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
+    # list_cookies = [i.strip() for i in open('cookies.txt', 'r', encoding='utf-8')]
     domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com','ke.com']  # 目标域名
     my_domain = '5i5j.com'
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
     chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
     ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
     driver = get_driver(chrome_path,chromedriver_path,ua)
-    q, group_list = bdpcIndexMonitor.read_excel('2020xiaoqu_kwd_city_new.xlsx')  # 关键词队列及分类
+    chromedriver_pids = get_pid_from_name("chromedriver.exe")
+    webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
+    webdriver_chrome_ids.extend(chromedriver_pids)
+    print(f'chrome的pid:{webdriver_chrome_ids},\nchromedriver的pid:{chromedriver_pids}')
+
+    q, group_list = bdpcIndexMonitor.read_excel('2021xiaoqu_kwd_city-.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数

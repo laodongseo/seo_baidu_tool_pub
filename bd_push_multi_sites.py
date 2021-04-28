@@ -3,10 +3,11 @@ import requests
 import time
 """
 多站点配置文件conf.txt 格式如下
-qd.xxx.com=tuz16xxxxNuxa2E=qd.txt
-sh.xxx.com=tuz16xxxxNuxa3E=sh.txt
+qd.xxx.com=xxxx=qd.txt
+sh.xxx.com=xxxx=sh.txt
 qd.txt存放qd的url 一行一个
 sh.txt存放sh的url 一行一个
+xxxx为站长平台本域名的token
 每个域名用完配额以后会进行下一个域名的推送
 """
 

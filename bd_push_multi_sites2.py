@@ -3,7 +3,8 @@ import requests
 import time
 import pandas as pd
 """
-
+excel多个sheet,1个sheet代表一个域名
+每个sheet有url、token、domain三列数据
 """
 
 

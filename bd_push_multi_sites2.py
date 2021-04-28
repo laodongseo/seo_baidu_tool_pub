@@ -8,14 +8,6 @@ excel多个sheet,1个sheet代表一个域名
 """
 
 
-# 读取配置
-def read_config(filepath):
-    configs = open(filepath,'r',encoding='utf-8').readlines()
-    configs = [line.strip() for line in configs]
-    return configs
-
-
-
 # all_urls二维列表,每个元素为2000url
 def push_url(domain,token,all_urls,retry=1):
     if  all_urls == []:

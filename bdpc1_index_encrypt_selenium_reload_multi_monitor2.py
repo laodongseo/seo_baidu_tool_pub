@@ -1,6 +1,6 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-执行脚本,由reload_control_pc.py控制执行
+执行脚本,由reload_control_pc_encrypt.py控制执行
 必须单线程,1是因为百度反爬,2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
 selenium操作浏览器浏览器会崩溃,reload_control_pc.py负责每30分钟杀死并重启一次本脚本

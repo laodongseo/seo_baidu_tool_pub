@@ -1,8 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
+执行脚本,由reload_control_pc.py控制执行
 必须单线程,1是因为百度反爬,2是写入文件未加锁可能错乱
 selenium驱动浏览器的方式 默认为无头模式,
-长期操作浏览器浏览器会崩溃,为了解决该问题代码检测抛出异常就重启(验证码页面也会抛出异常重启)
+selenium操作浏览器浏览器会崩溃,reload_control_pc.py负责每30分钟杀死并重启一次本脚本
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)抓取serp所有url,提取域名并统计各域名首页覆盖率
@@ -253,12 +254,6 @@ class bdpcIndexMonitor(threading.Thread):
                 q.put(group_kwd)
                 driver.quit()
                 kill_process(webdriver_chrome_ids)
-                # gc.collect()
-                # driver = get_driver(chrome_path,chromedriver_path,ua)
-                # chromedriver_pids = get_pid_from_name("chromedriver.exe")
-                # webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
-                # print(f'chrome的pid及子进程:{webdriver_chrome_ids}')
-                # webdriver_chrome_ids.extend(chromedriver_pids)
             else:
                 for my_serp_url, my_order, tpl in encrypt_url_list_rank:
                     f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\t加密\n'.format(kwd, str(my_serp_url), my_order, tpl, group))
@@ -275,7 +270,8 @@ class bdpcIndexMonitor(threading.Thread):
 if __name__ == "__main__":
     start = time.time()
     local_time = time.localtime()
-    today = time.strftime('%Y%m%d', local_time)
+    # today = time.strftime('%Y%m%d', local_time)
+    today = '20210419'
     f_all = open(f'{today}bdpc1_index_encrypt_all.txt', 'a+', encoding="utf-8") # 结果文件
 
     list_ua = [i.strip() for i in open('headers.txt', 'r', encoding='utf-8')]
@@ -289,7 +285,7 @@ if __name__ == "__main__":
         f_pid.write('\n'.join([str(id) for id in webdriver_chrome_ids]))
 
     domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com','ke.com']  # 目标域名
-    q, group_list = bdpcIndexMonitor.read_excel('2021xiaoqu_kwd_city1.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('2021xiaoqu_kwd_city.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数
@@ -299,6 +295,5 @@ if __name__ == "__main__":
         t.setDaemon(True)
         t.start()
     q.join()
-    f.close()
     f_all.close()
     print('done')

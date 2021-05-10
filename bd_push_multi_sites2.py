@@ -3,8 +3,10 @@ import requests
 import time
 import pandas as pd
 """
-excel多个sheet,1个sheet代表一个域名
-每个sheet有url、token、domain三列数据
+多域名推送
+每个sheet为1个域名数据
+excel每个sheet的表头：url token   domain
+
 """
 
 
@@ -71,6 +73,5 @@ if __name__ == "__main__":
 
     main('url_domain_multi_sheet.xlsx')
     
-
     f.close()
 

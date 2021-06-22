@@ -4,8 +4,8 @@ import time
 import pandas as pd
 """
 多域名推送
-每个sheet为1个域名数据
-excel每个sheet的表头：url token   domain
+每个sheet存1个域名数据
+每个sheet的表头：url token   domain
 
 """
 
@@ -15,10 +15,11 @@ def push_url(domain,token,all_urls,retry=1):
     if  all_urls == []:
         return '下一个'
     post_url = f'http://data.zz.baidu.com/urls?site=https://{domain}&token={token}'
+    print(post_url)
     for data_urls in all_urls:
         try:
-            str_urls = ''.join(data_urls)
-            r = requests.post(post_url,data=str_urls,headers=user_agent,timeout=5)
+            str_urls = '\n'.join(data_urls)
+            r = requests.post(post_url,data=str_urls,headers=user_agent,timeout=10)
         except Exception as e:
             print('请求失败,暂停15秒',e)
             time.sleep(15)
@@ -26,20 +27,18 @@ def push_url(domain,token,all_urls,retry=1):
                 push_url(post_url,domain,all_urls,retry-1)
         else:
             html = r.json()
-            keys = [ key for key,value in html.items()]
-            values = [ value for key,value in html.items()]
-            if 'success' in keys:
-                print(domain,'推送成功',len(data_urls))
-            elif 'error' in keys and 'over quota' in values:
-                print(domain,'配额不够,开始下一个域名推送',html)
-                return '下一个'
-            elif 'error' in keys and 'site error' in values:
-                print(domain,'站点配置错误,略过',html)
-                return '下一个'
+            status = r.status_code
+            if status == 200:
+                if html['success'] > 0:
+                    print(domain,html)
+                else:
+                    print(f'{domain}:推送数据为0,请检查配置')
+                    return '下一个'
             else:
-                f.write(str_urls)
-                f.flush()
-                print(domain,'推送失败，保存到文件',html)
+                print(domain,html)
+                return '下一个'
+
+
 
 
 # 读取excel,每个sheet化成二维列表
@@ -48,18 +47,19 @@ def main(filepath):
     for sheet_name,df_sheet in df_dict.items():
         sheet_urls = df_sheet['url'].values.tolist()
         domain,token = df_sheet['domain'][0],df_sheet['token'][0]
-        print(domain,token)
-        try:
+        if len(sheet_urls) >1999:
             list_format = [sheet_urls[i:i + 2000] for i in range(0, len(sheet_urls), 2000)]
-        except Exception as e:
-            list_format = sheet_urls  # 如果连接数量 <2000则取全部连接
-        finally:
-            # 死循环每个域名把配额用到无法接收单次的推送量
-            while 1:
-                res = push_url(domain,token,list_format)
-                time.sleep(1)
-                if '下一个' == res:
-                    break
+        else:
+            list_format = [sheet_urls]  # 如果连接数量 <2000则取全部连接
+        # 死循环每个域名把配额用到无法接收单次的推送量
+        post_num = 0
+        while 1:
+            res = push_url(domain,token,list_format)
+            time.sleep(1)
+            post_num+=1
+            print(domain,token,post_num,'次')
+            if '下一个' == res:
+                break
 
 
 if __name__ == "__main__":

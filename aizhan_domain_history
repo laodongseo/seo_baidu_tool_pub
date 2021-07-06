@@ -1,0 +1,138 @@
+# ‐*‐ coding: utf‐8 ‐*‐
+"""
+爱站百度历史权重查询
+aizhan_date.conf：1行1个时间周期(2016-01-01/2016-06-25)
+domain.txt：一行1个日期
+
+"""
+
+import requests
+from pyquery import PyQuery as pq
+import threading
+import queue
+import time
+import time
+import gc
+from openpyxl import Workbook
+import traceback
+import sys
+
+
+
+def get_html(url,retry=1):
+    try:
+        r = requests.get(url=url,headers=my_header,timeout=5,)
+    except Exception as e:
+        print('获取源码失败',e)
+        time.sleep(6)
+        if retry > 0:
+            get_html(url,retry-1)
+    else:
+        html = r.content.decode('utf-8',errors='ignore')
+        return html
+
+
+def get_info(html,domain):
+    if '没有查询到相关数据' in html:
+        return '无数据'
+    doc = pq(html)
+    title = doc('title').text()
+    row_all = []
+    if f'{domain}网站历史' in title:
+        tr_objs = doc('table.table-s1 tbody tr').items()
+        print(tr_objs)
+        for tr_obj in tr_objs:
+            row = []
+            td_objs = tr_obj('td').items()
+            for td_obj in td_objs:
+                value = td_obj.text().strip()
+                value = value.replace(',','')
+                try:
+                    value = int(value)
+                except Exception as e:
+                    value = value
+                finally:
+                    row.append(value)
+            row_all.append(row)
+        return row_all
+    else:
+        print('源码异常,手动检查。title:',title)
+        time.sleep(30)
+
+
+# 线程函数
+def run():
+    while 1:
+        domain = q.get()
+        for time_spans in date_need:
+            start_date,end_date = time_spans.split('/')
+            url = check_url.format(domain=domain,start_date=start_date,end_date=end_date)
+            print(url)
+            try:
+                html = get_html(url)
+                if not html:
+                    q.put(domain)
+                    print(domain,'重新入队列')
+                    continue
+                row_all = get_info(html,domain)
+                if row_all == None:
+                    q.put(domain)
+                    print(domain,'重新入队列')
+                    continue
+            except Exception as e:
+                exc_type, exc_value, exc_traceback_obj = sys.exc_info()
+                traceback.print_tb(exc_traceback_obj)
+            else:
+                for row in row_all:
+                    print(row)
+                    if '平均值' in row:
+                        continue
+                    lock.acquire()
+                    row.insert(0,domain)
+                    ws.append(row)
+                    row = [str(i) for i in row]
+                    f_res.write('\t'.join(row) + '\n')
+                    f_res.flush()
+                    lock.release()
+            time.sleep(6)
+        gc.collect()
+        q.task_done()
+
+
+if __name__ == "__main__":
+    my_header = {
+        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+'Accept-Encoding':'deflate',
+'Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,pt;q=0.5',
+'Cache-Control':'no-cache',
+'Connection':'keep-alive',
+'Cookie':'userId=665533; userName=772483200%40qq.com; userGroup=1; userSecure=QRR0K1yHuohXFMQTy%2FeS6o%2FuyW%2FGLU4U%2FuyH7cadlVGvvVzqNnk8qQ44dxqTNzmH14HUiyf5WmDiqzre; _aihecong_chat_visitorCookie=%7B%22visitormark%22%3A%7B%22addtime%22%3A%222021-05-25T09%3A36%3A52.964Z%22%2C%22address%22%3A%7B%22city%22%3A%22%E5%8C%97%E4%BA%AC%22%2C%22region%22%3A%22%E5%8C%97%E4%BA%AC%22%2C%22country%22%3A%22%E4%B8%AD%E5%9B%BD%22%7D%2C%22device%22%3A%7B%22ip%22%3A%2260.247.59.67%22%2C%22height%22%3A%22900%22%2C%22width%22%3A%221440%22%2C%22system%22%3A%22Win7%22%2C%22browser%22%3A%22Chrome%2090.0.4430.212%22%2C%22type%22%3A%22Desktop%22%7D%2C%22utm%22%3A%7B%7D%2C%22mark%22%3A%7B%22sourceType%22%3A%22externallinks%22%2C%22entranceTitle%22%3A%22%E6%96%87%E7%AB%A0%E4%BB%A3%E5%86%99%2C%E8%BD%AF%E6%96%87%E5%86%99%E4%BD%9C%2Cseo%E6%96%87%E6%A1%88%2C%E8%BD%AF%E6%96%87%E7%BD%91%20-%20%E7%88%B1%E7%AB%99%E8%BD%AF%E6%96%87%E7%BD%91%22%2C%22entranceUrl%22%3A%22https%3A%2F%2Fwriter.aizhan.com%2F%22%2C%22source%22%3A%22https%3A%2F%2Fwww.aizhan.com%2F%22%7D%2C%22stays%22%3A%7B%7D%2C%22curFrequency%22%3A1%2C%22pageDepth%22%3A0%2C%22stayDuration%22%3A0%2C%22_id%22%3A%2260acc53400b4a06c60322a62%22%2C%22lasttime%22%3A%222021-05-25T09%3A36%3A52.894Z%22%2C%22channelId%22%3A%22web26723%22%2C%22numberId%22%3A240061%2C%22visitorId%22%3A%2260acc53400b4a06c60322a61%22%2C%22__v%22%3A0%7D%2C%22last%22%3A%7B%22time%22%3A1621935413283%2C%22source%22%3A%22https%3A%2F%2Fwww.aizhan.com%2F%22%2C%22entranceUrl%22%3A%22https%3A%2F%2Fwriter.aizhan.com%2F%22%2C%22entranceTitle%22%3A%22%E6%96%87%E7%AB%A0%E4%BB%A3%E5%86%99%2C%E8%BD%AF%E6%96%87%E5%86%99%E4%BD%9C%2Cseo%E6%96%87%E6%A1%88%2C%E8%BD%AF%E6%96%87%E7%BD%91%20-%20%E7%88%B1%E7%AB%99%E8%BD%AF%E6%96%87%E7%BD%91%22%7D%2C%22visitormarkId%22%3A%2260acc53400b4a06c60322a62%22%2C%22visitorId%22%3A%2260acc53400b4a06c60322a61%22%2C%22lastTime%22%3A1621935413098%7D; _aihecong_chat_channelIds=%5B%7B%22customerId%22%3A%2260acc53500b4a06c60322a71%22%2C%22channelId%22%3A%22web26723%22%7D%5D; allWords=site%3Awww.itnav123.com%7C%E5%A0%86%E6%A0%88%E5%AF%BC%E8%88%AA%2C0; Hm_lvt_b37205f3f69d03924c5447d020c09192=1624328061,1624521528,1624604876,1624849934; allSites=nc.5i5j.com%7Cwww.renrenche.com%7Cwww.aaa.com%7Cwww.5i5j.com%7Clianjia.com%7C5i5j.com%7Canjuke.com%7Cnj.5i5j.com%7Czz.5i5j.com; _csrf=e48711fa6ac7dfb4af0e34eae16fbcaea1e1c4f90d21997f9be628a35c24e774a%3A2%3A%7Bi%3A0%3Bs%3A5%3A%22_csrf%22%3Bi%3A1%3Bs%3A32%3A%22cqugyvU-I2ARfNYxlZux9R8dPSWO3sSU%22%3B%7D; Hm_lpvt_b37205f3f69d03924c5447d020c09192=1624860112',
+'Host':'lishi.aizhan.com',
+'Pragma':'no-cache',
+'sec-ch-ua':'" Not;A Brand";v="99", "Microsoft Edge";v="91", "Chromium";v="91"',
+'sec-ch-ua-mobile':'?0',
+'Sec-Fetch-Dest':'document',
+'Sec-Fetch-Mode':'navigate',
+'Sec-Fetch-Site':'none',
+'Sec-Fetch-User':'?1',
+'Upgrade-Insecure-Requests':'1',
+'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
+        }
+    date_need = [i.strip() for i in open('aizhan_date.conf','r',encoding='utf-8')]
+    check_url = 'https://lishi.aizhan.com/{domain}/baidu/{start_date}/{end_date}/' # 查询url
+    f_res = open('aizhan_history_res.txt','w',encoding='utf-8')
+    wb = Workbook() # 结果文件
+    ws = wb.active
+    ws.append(['domain','日期','PC权重','移动权重','索引量','PC词量','移动词量','百度PC来路','百度移动来路','总预计来路'])
+    lock = threading.Lock() #创建锁
+    q = queue.Queue()
+    for i in open('domain.txt','r',encoding='utf-8'):
+        q.put(i.strip())
+    # 设置线程数
+    for i in range(1):
+        t = threading.Thread(target=run)
+        t.setDaemon(True)
+        t.start()
+    q.join()
+    wb.save('bd历史权重.xlsx')
+    f_res.close()

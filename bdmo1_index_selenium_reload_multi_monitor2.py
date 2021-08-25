@@ -1,12 +1,9 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
-执行脚本,由reload_control_mo.py控制重启
+selenium持续操作浏览器浏览器会崩溃,所以该脚本由reload_control_mo.py控制,
+定时重启,重启前会去重已抓取的词
+多线程脚本,默认是1
 
-不要放手机百度app的UA,这样是无限下拉造成判断失误
-必须单线程,1是因为百度反爬,2是写入文件未加锁可能错乱
-selenium驱动浏览器的方式 默认为无头模式,
-长期操作浏览器浏览器会崩溃,reload_control_mo.py每30分钟杀死并重启本脚本
-有异常会写入log.txt
 功能:
    1)指定几个域名,分关键词种类监控首页词数
    2)采集serp所有url,提取域名并统计各域名首页覆盖率
@@ -17,13 +14,10 @@ selenium驱动浏览器的方式 默认为无头模式,
     所以首页排名有可能大于10
   2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
     提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
-  3)2020kwd_url_core_city_unique.xlsx:sheet名为关键词种类,sheet第一列放关键词
+  3)2020kwd_url_core_city.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成
-    bdmo1_index.xlsx:自己站每类词首页词数
-    bdmo1_index_domains.xlsx:各监控站点每类词的首页词数
-    bdmo1_index_domains.txt:各监控站点每类词的首页词数
 """
 
 from pyquery import PyQuery as pq
@@ -57,19 +51,11 @@ def get_ua(filepath):
     return cookie_list
 
 
-# 字符串cookie转为字典
-def to_dict(cookie_str):
-    cookie = {}
-    lists = cookie_str.split(';')
-    for i in lists:
-        j = i.strip()
-        j = j.split('=')
-        cookie[j[0]] = j[1]
-    return cookie
-
-
-# 获取selenium启动的浏览器pid
+# 获取chromedriver及启动的浏览器pid
 def get_webdriver_chrome_ids(driver):
+    """
+    浏览器pid是chromedriver的子进程
+    """
     all_ids = []
     main_id = driver.service.process.pid
     all_ids.append(main_id)
@@ -88,77 +74,6 @@ def kill_process(p_ids):
     except Exception as e:
         pass
     time.sleep(2)
-
-
-# 根据进程名获取pid,传参chromedriver,暂时不用
-def get_pid_from_name(name):
-    chromedriver_pids = []
-    pids = psutil.process_iter()
-    for pid in pids:
-        if(pid.name() == name):
-            chromedriver_pids.append(pid.pid)
-    return chromedriver_pids
-
-
-
-# 计算最终结果
-def get_result(file_path, result):
-    for line in open(file_path, 'r', encoding='utf-8'):
-        line = line.strip().split('\t')
-        rank = line[2]
-        group = line[3]
-        domain = line[4]
-        if rank != '无':
-            result[domain][group]['首页'] += 1
-        result[domain][group]['总词数'] += 1
-    return result
-
-
-# 写txt,所有监控域名的结果
-def write_domains_txt(result_last):
-    with open('{0}bdmo1_index_domains.txt'.format(today), 'w', encoding="utf-8") as f_res:
-        f_res.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format('日期','域名','词类','首页词数','查询词数'))
-        for now_domain,dict_value in result_last.items():
-            for group, dict_index_all in dict_value.items():
-                f_res.write('{0}\t{1}\t{2}\t'.format(today,now_domain,group))
-                for key, value in dict_index_all.items():
-                    f_res.write(str(value) + '\t')
-                f_res.write('\n')
-
-
-# 写excel
-def write_myexcel(group_list, result_last, today,my_domain):
-    wb = Workbook()
-    wb_all = Workbook()
-    # 创建sheet写表头
-    for group in group_list:
-        sheet_num = 0
-        wb.create_sheet(u'{0}'.format(group), index=sheet_num)
-        wb_all.create_sheet(u'{0}'.format(group), index=sheet_num)
-        row_first = ['日期', '首页', '总词数']
-        row_first2 = ['日期', '域名','首页', '总词数']
-        # 写表头
-        wb[group].append(row_first)
-        wb_all[group].append(row_first2)
-        sheet_num += 1
-    # 写内容
-    for domain, dict_value in result_last.items():
-        if domain == my_domain:
-            for group, dict_index_all in dict_value.items():
-                # 写数据
-                row_value = [today]
-                for key,value in dict_index_all.items():
-                    row_value.append(value)
-                wb[u'{0}'.format(group)].append(row_value)
-
-        for group, dict_index_all in dict_value.items():
-            # 写数据
-            row_value = [today,domain]
-            for key, value in dict_index_all.items():
-                row_value.append(value)
-            wb_all[u'{0}'.format(group)].append(row_value)
-    wb.save('{0}bdmo1_index.xlsx'.format(today))
-    wb_all.save('{0}bdmo1_index_domains.xlsx'.format(today))
 
 
 def get_driver(chrome_path,chromedriver_path,ua):
@@ -188,14 +103,6 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-blink-features")
     option.add_argument("--disable-blink-features=AutomationControlled")
     driver = webdriver.Chrome(options=option,executable_path=chromedriver_path )
-    # 屏蔽特征
-  #   driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-  #       "source": """
-  #   Object.defineProperty(navigator, 'webdriver', {
-  #     get: () => undefined
-  #   })
-  # """
-  #   })
     return driver
 
 
@@ -238,9 +145,6 @@ class bdmoIndexMonitor(threading.Thread):
     def get_html(self,kwd,user_agent):
         global driver
         html = now_url = ''
-        # driver.get('https://m.baidu.com/')
-        # for k, v in cookie_dict.items():
-        #     driver.add_cookie({'name': k, 'value': v})
         driver.execute_cdp_cmd("Network.enable", {})
         driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": {"User-Agent":user_agent}})
         driver.get('https://m.baidu.com/')
@@ -386,36 +290,46 @@ class bdmoIndexMonitor(threading.Thread):
                 traceback.print_exc(file=open(f'{today}log.txt', 'a'))
                 driver.quit()
                 kill_process(webdriver_chrome_ids)
+                driver = get_driver(chrome_path, chromedriver_path, ua)
+                webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
+                print(f'chrome的pid:{webdriver_chrome_ids}')
+                # 定时重启之前崩溃重启后就重写pid
+                with open('bdmo1_script_ids.txt', 'w', encoding='utf-8') as f_pid:
+                    f_pid.write('\n'.join([str(id) for id in webdriver_chrome_ids]))
             else:
                 # 源码ok再写入
                 if divs_res:
                     real_urls_rank = self.get_real_urls(divs_res)
                     for my_url,my_order,my_attr in real_urls_rank:
-                        f_all.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd,my_url,my_order,my_attr,group))
-                    f_all.flush()
+                        lock.acquire()
+                        f_all.write(f'{kwd}\t{my_url}\t{my_order}\t{my_attr}\t{group}\n')
+                        f_all.flush()
+                        lock.release()
                     domain_url_dicts = self.get_top_domains(real_urls_rank)
                     domain_all = domain_url_dicts.keys()
                     # 目标站点是否出现
                     for domain in domains:
+                        lock.acquire()
                         if domain not in domain_all:
-                              f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(kwd, '无', '无', group,domain))
+                              f.write(f'{kwd}\t无\t无\t{group}\t{domain}\n')
                         else:
                             my_url,my_order,my_attr = domain_url_dicts[domain]
-                            f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(kwd,my_url,my_order,group,domain,my_attr))
+                            f.write(f'{kwd}\t{my_url}\t{my_order}\t{group}\t{domain}\t{my_attr}\n')
                             print(my_url, my_order)
-                f.flush()
+                        f.flush()
+                        lock.release()
             finally:
                 del kwd,group
                 gc.collect()
                 q.task_done()
-                time.sleep(1.5)
+                time.sleep(6.5)
                 
 
 if __name__ == "__main__":
     start = time.time()
     local_time = time.localtime()
     # today = time.strftime('%Y%m%d',local_time)
-    today = '20210425'
+    today = '20210824'
     user_agents = get_ua('ua_mo.txt')
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com','ke.com'] # 目标域名
     my_domain = '5i5j.com' # 自己域名
@@ -429,12 +343,12 @@ if __name__ == "__main__":
     with open('bdmo1_script_ids.txt','w',encoding='utf-8') as f_pid:
         f_pid.write('\n'.join([str(id) for id in webdriver_chrome_ids]))
 
-    q,group_list = bdmoIndexMonitor.read_excel('2021xiaoqu_kwd_city.xlsx')  # 关键词队列及分类
+    q,group_list = bdmoIndexMonitor.read_excel('2021kwd_url_core_city.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
-    all_num = q.qsize() # 总词数
     f = open('{0}bdmo1_index_info.txt'.format(today),'a+',encoding="utf-8")
     f_all = open('{0}bdmo1_index_all.txt'.format(today),'a+',encoding="utf-8")
     file_path = f.name
+    lock = threading.Lock()
     # 设置线程数
     for i in list(range(1)):
         t = bdmoIndexMonitor()
@@ -443,14 +357,9 @@ if __name__ == "__main__":
     q.join()
     f.close()
     f_all.close()
-    # 根据bdmo1_index_info.txt计算结果
-    result_last = get_result(file_path,result)
-    # 写入txt文件
-    write_domains_txt(result_last)
-    # 写入excel
-    write_myexcel(group_list,result_last,today,my_domain)
+
      # 统计查询成功的词数
     with open(file_path,'r',encoding='utf-8') as fp:
          success = int(sum(1 for x in fp)/len(domains))
     end = time.time()
-    print('关键词共{0}个,查询成功{1}耗时{2}min'.format(all_num,success, (end - start) / 60))
+    print('查询成功{1},耗时{2}min'.format(success, (end - start) / 60))

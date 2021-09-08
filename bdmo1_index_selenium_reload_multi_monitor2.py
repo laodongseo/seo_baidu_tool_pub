@@ -86,7 +86,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-dev-shm-usage")
     option.add_argument("--disable-gpu")
     option.add_argument("--disable-features=NetworkService")
-    # option.add_argument("--window-size=1920x1080")
+    option.add_argument("window-size=500,700")
     option.add_argument("--disable-features=VizDisplayCompositor")
     option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
@@ -362,4 +362,4 @@ if __name__ == "__main__":
     with open(file_path,'r',encoding='utf-8') as fp:
          success = int(sum(1 for x in fp)/len(domains))
     end = time.time()
-    print('查询成功{1},耗时{2}min'.format(success, (end - start) / 60))
+    print('查询成功{0},耗时{1}min'.format(success, (end - start) / 60))

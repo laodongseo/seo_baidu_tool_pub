@@ -2,6 +2,8 @@
 import requests
 import time
 import pandas as pd
+import traceback
+import urllib
 """
 多域名推送
 每个sheet存1个域名数据
@@ -19,10 +21,13 @@ def push_url(domain,token,all_urls,retry=1):
     for data_urls in all_urls:
         try:
             str_urls = '\n'.join(data_urls)
+            str_urls = str_urls.encode('utf-8') # 防止中文url报错
             r = requests.post(post_url,data=str_urls,headers=user_agent,timeout=10)
         except Exception as e:
-            print('请求失败,暂停15秒',e)
+            print('请求失败,暂停15秒')
+            traceback.print_exc()
             time.sleep(15)
+            break
             if retry > 0:
                 push_url(post_url,domain,all_urls,retry-1)
         else:
@@ -67,11 +72,11 @@ if __name__ == "__main__":
     user_agent = {
         'User - Agent':'curl / 7.12.1',
         'Host':'data.zz.baidu.com',
-        'Content - Type':'text / plain',
+        'Content - Type':'text/plain',
         'Content - Length':'83'
     }
 
-    main('url_domain_multi_sheet.xlsx')
+    main('租房二手房列表_unique_domain_multi_sheet.xlsx')
     
     f.close()
 

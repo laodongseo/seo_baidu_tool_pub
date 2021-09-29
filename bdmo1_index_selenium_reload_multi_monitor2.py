@@ -43,12 +43,26 @@ import tld
 import psutil
 
 
+cookie_str = """
+PSTM=1615340407; BIDUPSID=F2515E4F29BB88B255962F2CFE19C3F9; __yjs_duid=1_a1942d4ca1a959bb32e3ffff0cf07ad41617946073654; BAIDUID={0}:SL=0:NR=10:FG=1; MSA_WH=375_667; MAWEBCUID=web_HZaROXCyXvOjHUxdDgsRzFWcFvyytfvmhKNANGkMBMqFBkpuhv; MSA_ZOOM=1056; MSA_PBT=148; MSA_PHY_WH=750_1334; FC_MODEL=-1_2_7_0_7.85_0_1_0_0_0_23.18_-1_6_4_6_24_0_1631263335_1631263305%7C9%237.85_-1_-1_6_6_1631263335_1631263305%7C9%230_adbxx_1_0_0_0_128_1631263305; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; BAIDUID_BFESS=D568D1B0D0B3879A1E7112528EF2623A:FG=1; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03827201144a0JlvNBhzyaMMfZdwH90RT8OBkn8ABSLhaGIsbPpjPkNdVCsxeqDYr%2F7U8he1Kgj1mSb3qwBV86TLdvd2JIvZaVS5ikyHbS9DWyRRn%2Bbsqce7RMq0iGcmMGJfzwZ5oD0e7BchUkHdy7ClrSG3SzUsRTA3iPbN6vO0jhskOmFqT9WSfjiuoPRIvB61C3OPOH2T%2FKqxLRZsq%2B44dY2z%2FRHfcLmKf3U%2FrxmB81C2YK2cplSOChRA4k8GWM%2FFpgL9eWKDBQXG9r0%2B9oxwyRKuT04Q1%2Fa5%2Fx9l6ZPFhw7P3qyuXExgCEjVCbwaT9MMOYL0vrz33rW5ObnlHVlk8uEJ%2FntWU%2FedvtyK7dwBN9YUkLrhMD7wknzBV7XimErvoGqS7Ys14490981776443311184956874718000; BDRCVFR[PaHiFN6tims]=9xWipS8B-FspA7EnHc1QhPEUf; delPer=0; BDRCVFR[YDNdHN8k-cs]=9xWipS8B-FspA7EnHc1QhPEUf; wpr=0; COOKIE_SESSION=0_0_0_0_0_0_0_0_0_0_0_0_0_1632724773%7C1%230_0_0_0_0_0_0_0_1632724773%7C1; G_PSCBD=105%3A1; G_LAUNCH=105%3A27212082; PSINO=7; BCLID=8122778086092787701; BDSFRCVID=vgkOJeC62xkxKfjH_8JJt_0-QbzD6yQTH6aoiNadLAIWb-7j6rFpEG0PMU8g0K4-gVGPogKK0mOTHUuF_2uxOjjg8UtVJeC6EG0Ptf8g0f5; H_BDCLCKID_SF=tRk8oK-atDvDqTrP-trf5DCShUFsaqTWB2Q-XPoO3KJ-_nD6yhnMbUA3BN0LQCrRBKOrbfbgy4op8P3y0bb2DUA1y4vpKMRUX2TxoUJ25fj8enrDqtnWhfkebPRiJPr9QgbP5lQ7tt5W8ncFbT7l5hKpbt-q0x-jLTnhVn0MBCK0hD0wDT8hD6PVKgTa54cbb4o2WbCQ-b7P8pcN2b5oQT8BBULfBpRJ5bRJMKtEL66U8n7s0lOUWJDkXpJvQnJjt2JxaqRC5h7R_p5jDh3Mbl_qbUTle4ROamby0hvctn6cShnaLfjrDRLbXU6BK5vPbNcZ0l8K3l02V-bIe-t2XjQhDHt8J50ttJ3aQ5rtKRTffjrnhPF3qqkmXP6-hnjy3bRqMbD5WU7MeU3mBT0V0DuvXUnrQq3Ry6r42-39LPO2hpRjyxv4bU4iBPoxJpOJ5H6B0brIHR7WDqnvbURvD-ug3-7P3x5dtjTO2bc_5KnlfMQ_bf--QfbQ0hOhqP-jBRIEoC0XtK-hhCvPKITD-tFO5eT22-usWJ6m2hcHMPoosIJCBPLbyh43bPOJy58LL4jR2b71LfbUotoHXnJi0btQDPvxBf7p52OUMh5TtUJMexjFbPTPqt4bht7yKMnitIj9-pnG0lQrh459XP68bTkA5bjZKxtq3mkjbPbDfn028DKuDj0WD5O0eats-bbfHD3t3RcVaJ3-qTrnhPF354-fXP6-35KHMI3OabQ_WUAWOlcmBT0V0tDhQaj8Ql37JD6yBlrq5pRNOf3PqjJ8jRDzK-oxJpOuQRbMopk2HR34sUJvbURvD-ug3-7P-x5dtjTO2bc_5KnlfMQ_bf--QfbQ0hOhqP-j5JIE3-oJqC-MMKoP; BCLID_BFESS=8122778086092787701; BDSFRCVID_BFESS=vgkOJeC62xkxKfjH_8JJt_0-QbzD6yQTH6aoiNadLAIWb-7j6rFpEG0PMU8g0K4-gVGPogKK0mOTHUuF_2uxOjjg8UtVJeC6EG0Ptf8g0f5; H_BDCLCKID_SF_BFESS=tRk8oK-atDvDqTrP-trf5DCShUFsaqTWB2Q-XPoO3KJ-_nD6yhnMbUA3BN0LQCrRBKOrbfbgy4op8P3y0bb2DUA1y4vpKMRUX2TxoUJ25fj8enrDqtnWhfkebPRiJPr9QgbP5lQ7tt5W8ncFbT7l5hKpbt-q0x-jLTnhVn0MBCK0hD0wDT8hD6PVKgTa54cbb4o2WbCQ-b7P8pcN2b5oQT8BBULfBpRJ5bRJMKtEL66U8n7s0lOUWJDkXpJvQnJjt2JxaqRC5h7R_p5jDh3Mbl_qbUTle4ROamby0hvctn6cShnaLfjrDRLbXU6BK5vPbNcZ0l8K3l02V-bIe-t2XjQhDHt8J50ttJ3aQ5rtKRTffjrnhPF3qqkmXP6-hnjy3bRqMbD5WU7MeU3mBT0V0DuvXUnrQq3Ry6r42-39LPO2hpRjyxv4bU4iBPoxJpOJ5H6B0brIHR7WDqnvbURvD-ug3-7P3x5dtjTO2bc_5KnlfMQ_bf--QfbQ0hOhqP-jBRIEoC0XtK-hhCvPKITD-tFO5eT22-usWJ6m2hcHMPoosIJCBPLbyh43bPOJy58LL4jR2b71LfbUotoHXnJi0btQDPvxBf7p52OUMh5TtUJMexjFbPTPqt4bht7yKMnitIj9-pnG0lQrh459XP68bTkA5bjZKxtq3mkjbPbDfn028DKuDj0WD5O0eats-bbfHD3t3RcVaJ3-qTrnhPF354-fXP6-35KHMI3OabQ_WUAWOlcmBT0V0tDhQaj8Ql37JD6yBlrq5pRNOf3PqjJ8jRDzK-oxJpOuQRbMopk2HR34sUJvbURvD-ug3-7P-x5dtjTO2bc_5KnlfMQ_bf--QfbQ0hOhqP-j5JIE3-oJqC-MMKoP; H_PS_PSSID=34648_34446_34067_31254_34554_34712_34584_34504_26350_34724_34627_34691; BA_HECTOR=2g8gag212h85a08hh81gl34nt0q; ZD_ENTRY=baidu; ab_sr=1.0.1_ZGVmMGQ5Y2YxZTAxOGUxMDdlZWM2ZDExOWM1YzFmM2FmMmJlYTM2ZTU1MTk5MWU1ZTg3ZWFjMjA3MDEyZmQwNDdiY2FiNjkxNTI2YTdhNGRmY2FkMjYzODE2NDFjYWM0NjU1MTQwOWMyMGU1ZGRkYzI2MWUxMzJlOGE4NjQyMTMyYmE1MTZlMTBlYzE4MTgxNzY3NTA0YTEzMGM0NDZkZQ==; H_WISE_SIDS=110085_114550_127969_164325_178384_178529_178640_179349_179379_179432_179623_181133_181588_181713_181824_182233_182273_182290_182531_183035_183330_183346_183536_183581_183611_184012_184267_184321_184794_184809_184891_185029_185036_185136_185268_185519_185632_185652_185880_186015_186022_186313_186318_186412_186580_186596_186625_186662_186820_186841_187003_187023_187067_187087_187206_187214_187287_187324_187345_187433_187563_187669_187726_187815_187915_187926_187929_188267_188425_188468; rsv_i=1cdatUPaDm97BsfTtvWyulo5FOphMnmrvW2%2FJA3JMSTb1ulpjNrdsn6YY8alfP9Mw%2BKY66ZZEYKk9Z9ySelBOhm3jpKgjO4; BDSVRTM=431; BDSVRBFE=Go; plus_lsv=e9e1d7eaf5c62da9; Hm_lvt_12423ecbc0e2ca965d84259063d35238=1631067986,1631263304,1631264087,1632736260; Hm_lpvt_12423ecbc0e2ca965d84259063d35238=1632736260; plus_cv=1::m:7.94e+147; SE_LAUNCH=5%3A27212270; __bsi=8919015060149402714_00_48_N_R_9_0303_c02f_Y
+"""
+
+# 生成随机cookie
+def get_cookie():
+    seed = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    lis = []
+    [lis.append(random.choice(seed)) for _ in range(33)]
+    uid = ''.join(lis)
+    return uid
+
 
 # 获取ua
 def get_ua(filepath):
     cookie_list = []
     cookie_list = [line.strip() for line in open(filepath,'r',encoding='utf-8')]
     return cookie_list
+
+
 
 
 # 获取chromedriver及启动的浏览器pid
@@ -86,7 +100,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-dev-shm-usage")
     option.add_argument("--disable-gpu")
     option.add_argument("--disable-features=NetworkService")
-    option.add_argument("window-size=500,700")
+    # option.add_argument("--window-size=1920x1080")
     option.add_argument("--disable-features=VizDisplayCompositor")
     option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志
@@ -142,11 +156,14 @@ class bdmoIndexMonitor(threading.Thread):
 
 
     # 获取源码,有异常由run函数的try捕获
-    def get_html(self,kwd,user_agent):
+    def get_html(self,kwd):
+        global cookie_str
         global driver
         html = now_url = ''
+        user_agent = random.choice(user_agents)
+        cookie_str = cookie_str.strip().format(get_cookie())
         driver.execute_cdp_cmd("Network.enable", {})
-        driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": {"User-Agent":user_agent}})
+        driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": {"User-Agent":user_agent,'Cookie':cookie_str}})
         driver.get('https://m.baidu.com/')
         input = WebDriverWait(driver, 30).until(
             EC.visibility_of_element_located((By.ID, "index-kw"))
@@ -281,18 +298,17 @@ class bdmoIndexMonitor(threading.Thread):
             group,kwd = group_kwd
             print(group,kwd)
             try:
-                user_agent = random.choice(user_agents)
-                html,now_url = self.get_html(kwd,user_agent)
+                html,now_url = self.get_html(kwd)
                 divs_res = self.get_divs(html,now_url)
             except Exception as e:
-                print(e)
+                traceback.print_exc()
                 q.put(group_kwd)
                 traceback.print_exc(file=open(f'{today}log.txt', 'a'))
                 driver.quit()
                 kill_process(webdriver_chrome_ids)
                 driver = get_driver(chrome_path, chromedriver_path, ua)
                 webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
-                print(f'chrome的pid:{webdriver_chrome_ids}')
+                print(f'相关pid:{webdriver_chrome_ids}')
                 # 定时重启之前崩溃重启后就重写pid
                 with open('bdmo1_script_ids.txt', 'w', encoding='utf-8') as f_pid:
                     f_pid.write('\n'.join([str(id) for id in webdriver_chrome_ids]))
@@ -322,14 +338,14 @@ class bdmoIndexMonitor(threading.Thread):
                 del kwd,group
                 gc.collect()
                 q.task_done()
-                time.sleep(6.5)
+                time.sleep(2)
                 
 
 if __name__ == "__main__":
     start = time.time()
     local_time = time.localtime()
     # today = time.strftime('%Y%m%d',local_time)
-    today = '20210824'
+    today = open('the_date.txt','r',encoding='utf-8').readlines()[0].strip()
     user_agents = get_ua('ua_mo.txt')
     domains = ['5i5j.com','lianjia.com','anjuke.com','fang.com','ke.com'] # 目标域名
     my_domain = '5i5j.com' # 自己域名
@@ -345,8 +361,8 @@ if __name__ == "__main__":
 
     q,group_list = bdmoIndexMonitor.read_excel('2021kwd_url_core_city.xlsx')  # 关键词队列及分类
     result = bdmoIndexMonitor.result_init(group_list)  # 初始化结果
-    f = open('{0}bdmo1_index_info.txt'.format(today),'a+',encoding="utf-8")
-    f_all = open('{0}bdmo1_index_all.txt'.format(today),'a+',encoding="utf-8")
+    f = open(f'{today}bdmo1_index_info.txt','a+',encoding="utf-8")
+    f_all = open(f'{today}bdmo1_index_all.txt','a+',encoding="utf-8")
     file_path = f.name
     lock = threading.Lock()
     # 设置线程数
@@ -362,4 +378,4 @@ if __name__ == "__main__":
     with open(file_path,'r',encoding='utf-8') as fp:
          success = int(sum(1 for x in fp)/len(domains))
     end = time.time()
-    print('查询成功{0},耗时{1}min'.format(success, (end - start) / 60))
+    print(f'查询成功{success}')

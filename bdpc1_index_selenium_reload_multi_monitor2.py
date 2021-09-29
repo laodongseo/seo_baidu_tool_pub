@@ -12,7 +12,7 @@ selenium持续操作浏览器浏览器会崩溃,所以,
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
-  3)城市大词+竞价转化词_city.xlsx:sheet名为关键词种类,sheet第一列放关键词
+  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
     bdpc1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
     bdpc1_index_all.txt:serp所有url及样式特征
@@ -42,6 +42,19 @@ import tld
 import psutil
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+cookie_str = """
+PSTM=1615340407;BIDUPSID=F2515E4F29BB88B255962F2CFE19C3F9; BD_UPN=12314353;__yjs_duid=1_a1942d4ca1a959bb32e3ffff0cf07ad41617946073654;BAIDUID={0}:SL=0:NR=10:FG=1; MAWEBCUID=web_HZaROXCyXvOjHUxdDgsRzFWcFvyytfvmhKNANGkMBMqFBkpuhv; MSA_WH=375_667; sug=3; sugstore=0; ORIGIN=0; bdime=0; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; plus_cv=1::m:7.94e+147; H_WISE_SIDS=110085_114550_127969_164325_178384_178529_178640_179349_179379_179432_179623_181133_181588_181713_181824_182233_182273_182290_182531_183035_183330_183346_183536_183581_183611_184012_184267_184321_184794_184809_184891_185029_185036_185136_185268_185519_185632_185652_185880_186015_186022_186313_186318_186412_186580_186596_186625_186662_186820_186841_187003_187023_187067_187087_187206_187214_187287_187324_187345_187433_187563_187669_187726_187815_187915_187926_187929_188267_188425_188468; BDSFRCVID_BFESS=vgkOJeC62xkxKfjH_8JJt_0-QbzD6yQTH6aoiNadLAIWb-7j6rFpEG0PMU8g0K4-gVGPogKK0mOTHUuF_2uxOjjg8UtVJeC6EG0Ptf8g0f5; H_BDCLCKID_SF_BFESS=tRk8oK-atDvDqTrP-trf5DCShUFsaqTWB2Q-XPoO3KJ-_nD6yhnMbUA3BN0LQCrRBKOrbfbgy4op8P3y0bb2DUA1y4vpKMRUX2TxoUJ25fj8enrDqtnWhfkebPRiJPr9QgbP5lQ7tt5W8ncFbT7l5hKpbt-q0x-jLTnhVn0MBCK0hD0wDT8hD6PVKgTa54cbb4o2WbCQ-b7P8pcN2b5oQT8BBULfBpRJ5bRJMKtEL66U8n7s0lOUWJDkXpJvQnJjt2JxaqRC5h7R_p5jDh3Mbl_qbUTle4ROamby0hvctn6cShnaLfjrDRLbXU6BK5vPbNcZ0l8K3l02V-bIe-t2XjQhDHt8J50ttJ3aQ5rtKRTffjrnhPF3qqkmXP6-hnjy3bRqMbD5WU7MeU3mBT0V0DuvXUnrQq3Ry6r42-39LPO2hpRjyxv4bU4iBPoxJpOJ5H6B0brIHR7WDqnvbURvD-ug3-7P3x5dtjTO2bc_5KnlfMQ_bf--QfbQ0hOhqP-jBRIEoC0XtK-hhCvPKITD-tFO5eT22-usWJ6m2hcHMPoosIJCBPLbyh43bPOJy58LL4jR2b71LfbUotoHXnJi0btQDPvxBf7p52OUMh5TtUJMexjFbPTPqt4bht7yKMnitIj9-pnG0lQrh459XP68bTkA5bjZKxtq3mkjbPbDfn028DKuDj0WD5O0eats-bbfHD3t3RcVaJ3-qTrnhPF354-fXP6-35KHMI3OabQ_WUAWOlcmBT0V0tDhQaj8Ql37JD6yBlrq5pRNOf3PqjJ8jRDzK-oxJpOuQRbMopk2HR34sUJvbURvD-ug3-7P-x5dtjTO2bc_5KnlfMQ_bf--QfbQ0hOhqP-j5JIE3-oJqC-MMKoP; BAIDUID_BFESS=CCEDA782DDF5047CF5E11280A33E53A9:FG=1; SIGNIN_UC=70a2711cf1d3d9b1a82d2f87d633bd8a03828065500z7Gq%2FTo%2FxTFWCT09n8NitnEL%2BSlRxAVLEtldFAc10XVmkMs9eaVd3CYKcBklMkdNr0au0l1Wz4P4gDRwtwq56hRXzdSqRhiUx3u1Xz9kP4kZIuVDWlk1ad%2BiOJzXRwgQl0c%2BbpUcV%2ByGl%2BxMTJ9ZgptstJOEvCmI3G%2Fr7LuraRKOFjfG0jF4Mil3Fsl9Tv1JjwlzNMB8cYcinKrDrHp62XAf1BkH%2FR5uwqWZdpDniYH21ogG2Ljwg2KlGGHGAuqDNUcJ3WIowgyKM41Z3HqfRsW4zpvPSvMjoeLjGAPI2%2F6q9pSBWcV52lf8K3SmUDCRLj5CVrCySQxmpoBSloXaTs46wab%2FjOsMW3iJvJSbLvigWXx5hp%2FM50KwQOKIoFOK33779032216386984673439768105036; uc_login_unique=def473df6f3046d40e25d06e9c155cef; uc_recom_mark=cmVjb21tYXJrXzExMjgyMTQ5; BD_HOME=1; delPer=0; BD_CK_SAM=1; PSINO=7; H_PS_PSSID=34648_34446_34067_31254_34554_34712_34584_34504_26350_34724_34627_34691; H_PS_645EC=3ed20zv3dWdCcLhqMZjulIXOWNA8KmOR1JOWrx58rI2mInw1XW91ySMNPks; BA_HECTOR=0l2ha50k8k212k21ao1gl4tq90q; BDSVRTM=159
+"""
+
+# 生成随机cookie
+def get_cookie():
+    seed = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    lis = []
+    [lis.append(random.choice(seed)) for _ in range(33)]
+    uid = ''.join(lis)
+    return uid
 
 
 # 获取chromedriver及其启动的浏览器pid
@@ -104,7 +117,7 @@ def get_header():
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
         'Cache-Control': 'max-age=0',
         'Connection': 'keep-alive',
-        # 'Cookie': random.choice(list_cookies),
+        'Cookie': cookie_str.strip().format(get_cookie()),
         'Host': 'www.baidu.com',
         'Sec-Fetch-Dest': 'document',
         'Sec-Fetch-Mode': 'navigate',
@@ -322,7 +335,7 @@ class bdpcIndexMonitor(threading.Thread):
                     f_all.write(f'{kwd}\t{my_real_url}\t{my_order}\t{tpl}\t{group}\n')
                     f_all.flush()
                     lock.release()
-                    time.sleep(0.25)
+                    time.sleep(0.1)
                     real_urls_rank.append((my_real_url, my_order, tpl))
 
                 domain_url_dicts = self.get_top_domains(real_urls_rank)
@@ -349,7 +362,7 @@ if __name__ == "__main__":
     start = time.time()
     local_time = time.localtime()
     # today = time.strftime('%Y%m%d', local_time)
-    today = '20210907'
+    today = open('the_date.txt','r',encoding='utf-8').readlines()[0].strip()
     list_ua = [i.strip() for i in open('ua_pc.txt', 'r', encoding='utf-8')]
     domains = ['5i5j.com', 'lianjia.com', 'anjuke.com', 'fang.com','ke.com']  # 目标域名
     my_domain = '5i5j.com'
@@ -362,12 +375,12 @@ if __name__ == "__main__":
     with open('bdpc1_script_ids.txt','w',encoding='utf-8') as f_pid:
         f_pid.write('\n'.join([str(id) for id in webdriver_chrome_ids]))
 
-    q, group_list = bdpcIndexMonitor.read_excel('城市大词+竞价转化词_city.xlsx')  # 关键词队列及分类
+    q, group_list = bdpcIndexMonitor.read_excel('2021kwd_url_core_city.xlsx')  # 关键词队列及分类
     result = bdpcIndexMonitor.result_init(group_list)  # 结果字典
     # print(result)
     all_num = q.qsize()  # 总词数
-    f = open('{0}bdpc1_index_info.txt'.format(today), 'a+', encoding="utf-8")
-    f_all = open('{0}bdpc1_index_all.txt'.format(today), 'a+', encoding="utf-8")
+    f = open(f'{today}bdpc1_index_info.txt', 'a+', encoding="utf-8")
+    f_all = open(f'{today}bdpc1_index_all.txt', 'a+', encoding="utf-8")
     file_path = f.name
     lock = threading.Lock()
     # 设置线程数
@@ -383,4 +396,4 @@ if __name__ == "__main__":
     with open(file_path, 'r', encoding='utf-8') as fp:
         success = int(sum(1 for x in fp) / len(domains))
     end = time.time()
-    print('查询成功{1}个,耗时{2}min'.format(success, (end - start) / 60))
+    print(f'查询成功{success}个')

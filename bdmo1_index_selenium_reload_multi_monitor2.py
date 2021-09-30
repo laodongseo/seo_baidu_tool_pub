@@ -100,7 +100,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
     option.add_argument("--disable-dev-shm-usage")
     option.add_argument("--disable-gpu")
     option.add_argument("--disable-features=NetworkService")
-    # option.add_argument("--window-size=1920x1080")
+    option.add_argument("window-size=800,800")
     option.add_argument("--disable-features=VizDisplayCompositor")
     option.add_argument('headless')
     option.add_argument('log-level=3') #屏蔽日志

@@ -8,7 +8,7 @@ import os
 import re
 from apscheduler.schedulers.blocking import BlockingScheduler
 import time
-import gc,os
+import gc
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl import Workbook
@@ -104,7 +104,7 @@ def go_run():
     ids = get_process_id(py_script_name)
     print(ids)
     kill_ids(ids)
-    chrome_driver_ids = [id.strip() for id in open(py_script_pid_file,'r',encoding='utf-8')]
+    chrome_driver_ids = [id.strip() for id in open(py_script_pid_file,'r',encoding='utf-8')] if os.path.exists(py_script_pid_file) else []
     print(chrome_driver_ids)
     kill_ids(chrome_driver_ids)
     time.sleep(2)
@@ -127,11 +127,11 @@ def go_run():
 if __name__ == "__main__":
     start = time.time()
     today = time.strftime('%Y%m%d', time.localtime())
-    kwd_all_excel = '城市大词+竞价转化词_city - 副本.xlsx' # 总kwd
-    kwd_temp_excel = '城市大词+竞价转化词_city.xlsx' # 每次剩余待抓取的kwd
+    kwd_all_excel = '5i5j.com_百度电脑_2021.10.12 - 副本.xlsx' # 总kwd
+    kwd_temp_excel = '5i5j.com_百度电脑_2021.10.12.xlsx' # 每次剩余待抓取的kwd
     py_script_name = 'bdpc1_index_selenium_reload_multi_monitor2.py'
     py_script_pid_file = 'bdpc1_script_ids.txt'
-    date_need = '20210907'
+    date_need = open('the_date.txt','r',encoding='utf-8').readlines()[0].strip()
     index_info,index_all = f'{date_need}bdpc1_index_info.txt',f'{date_need}bdpc1_index_all.txt'
     info_columns = ['kwd','url','rank','city','domain','style']
     all_columns = ['kwd','url','rank','style','city']

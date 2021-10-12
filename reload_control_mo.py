@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-控制bdmo1_index_selenium_reload_multi_monitor2.py脚本的执行
-定时重启该脚本
-每次开启前尝试杀死运行中的脚本进程,chrome及chromedriver进程
+控制另外脚本的执行
+每次开启前尝试杀死再执行的点击脚本进程,chrome及chromedriver进程
 py_script_pid_file写死
-date_need和bdmo1_index_selenium_reload_multi_monitor2.py中的日期保持一致
+date_need写死
 """
 import os
 import re
@@ -107,7 +106,7 @@ def go_run():
     ids = get_process_id(py_script_name)
     print(ids)
     kill_ids(ids)
-    chrome_driver_ids = [id.strip() for id in open(py_script_pid_file,'r',encoding='utf-8')]
+    chrome_driver_ids = [id.strip() for id in open(py_script_pid_file,'r',encoding='utf-8')] if os.path.exists(py_script_pid_file) else []
     print(chrome_driver_ids)
     kill_ids(chrome_driver_ids)
     time.sleep(2)
@@ -130,11 +129,11 @@ def go_run():
 
 if __name__ == "__main__":
     start = time.time()
-    kwd_all_excel = '2021kwd_url_core_city - 副本.xlsx' # 总kwd
-    kwd_temp_excel = '2021kwd_url_core_city.xlsx' # 每次剩余待抓取的kwd
+    kwd_all_excel = '5i5j.com_百度手机_2021.10.12 - 副本.xlsx' # 总kwd
+    kwd_temp_excel = '5i5j.com_百度手机_2021.10.12.xlsx' # 每次剩余待抓取的kwd
     py_script_name = 'bdmo1_index_selenium_reload_multi_monitor2.py'
     py_script_pid_file = 'bdmo1_script_ids.txt'
-    date_need = '20210824'
+    date_need = open('the_date.txt','r',encoding='utf-8').readlines()[0].strip()
     index_info,index_all = f'{date_need}bdmo1_index_info.txt',f'{date_need}bdmo1_index_all.txt'
     info_columns = ['kwd','url','rank','city','domain','style']
     all_columns = ['kwd','url','rank','style','city']

@@ -72,6 +72,7 @@ def main():
 		kwd = q.get()
 		html = post_html(kwd)
 		if not html:
+			q.task_done()
 			continue
 		df = parse_html(html)
 		if df.shape[0] > 0:

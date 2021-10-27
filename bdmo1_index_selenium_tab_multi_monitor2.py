@@ -25,8 +25,7 @@ import queue
 import time
 import json
 from urllib.parse import urlparse
-from openpyxl import load_workbook
-from openpyxl import Workbook
+import pandas as pd
 import time
 import gc
 import random
@@ -89,6 +88,7 @@ def kill_process(p_ids):
 		pass
 	time.sleep(1)
 
+
 def close_handle():
 	if len(driver.window_handles) > 1:
 		for handle in driver.window_handles[0:-1]:
@@ -115,7 +115,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
 	option.add_argument("--disable-features=NetworkService")
 	option.add_argument("window-size=800,700")
 	option.add_argument("--disable-features=VizDisplayCompositor")
-	# option.add_argument('headless')
+	option.add_argument('headless')
 	option.headless = True
 	option.add_argument('log-level=3') #屏蔽日志
 	option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
@@ -142,20 +142,13 @@ class bdmoIndexMonitor(threading.Thread):
 	@staticmethod
 	def read_excel(filepath):
 		q = queue.Queue()
-		group_list = []
-		kwd_dict = {}
-		wb_kwd = load_workbook(filepath)
-		for sheet_obj in wb_kwd:
-			sheet_name = sheet_obj.title
-			group_list.append(sheet_name)
-			kwd_dict[sheet_name]= []
-			col_a = sheet_obj['A']
-			for cell in col_a:
-				kwd = (cell.value)
-				# 加个判断吧
-				if kwd:
-					q.put([sheet_name,kwd])
-		return q, group_list
+		df_dict = pd.read_excel(filepath,sheet_name=None)
+		for sheet_name,df_sheet in df_dict.items():
+			values = df_sheet['kwd'].dropna().values
+			for kwd in values:
+				if str(kwd).strip():
+					q.put((sheet_name,kwd))
+		return q
 
 
 	# 获取源码,有异常由run函数的try捕获
@@ -346,7 +339,7 @@ if __name__ == "__main__":
 	driver = get_driver(chrome_path,chromedriver_path,ua)
 	webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
 	print(f'webdriver+chrome的id:{webdriver_chrome_ids}')
-	q,group_list = bdmoIndexMonitor.read_excel('城市大词+竞价转化词_city.xlsx')  # 关键词队列及分类
+	q = bdmoIndexMonitor.read_excel('2021kwd_url_core_city_表头.xlsx')  # 关键词队列及分类
 	f = open(f'{today}bdmo1_index_info.txt','w+',encoding="utf-8")
 	f_all = open(f'{today}bdmo1_index_all.txt','w+',encoding="utf-8")
 	file_path = f.name

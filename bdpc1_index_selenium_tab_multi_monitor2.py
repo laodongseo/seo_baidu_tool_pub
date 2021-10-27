@@ -12,7 +12,7 @@ selenium持续操作浏览器浏览器会崩溃!所以:
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
-  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
+  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet的kwd列放关键词
 结果:
 	bdpc1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
 	bdpc1_index_all.txt:serp所有url及样式特征

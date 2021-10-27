@@ -152,20 +152,13 @@ class bdpcIndexMonitor(threading.Thread):
 	@staticmethod
 	def read_excel(filepath):
 		q = queue.Queue()
-		group_list = []
-		kwd_dict = {}
-		wb_kwd = load_workbook(filepath)
-		for sheet_obj in wb_kwd:
-			sheet_name = sheet_obj.title
-			group_list.append(sheet_name)
-			kwd_dict[sheet_name] = []
-			col_a = sheet_obj['A']
-			for cell in col_a:
-				kwd = (cell.value)
-				# 加个判断吧
-				if kwd:
-					q.put([sheet_name, kwd])
-		return q, group_list
+		df_dict = pd.read_excel(filepath,sheet_name=None)
+		for sheet_name,df_sheet in df_dict.items():
+			values = df_sheet['kwd'].dropna().values
+			for kwd in values:
+				if str(kwd).strip():
+					q.put((sheet_name,kwd))
+		return q
 
 
 	# 获取源码
@@ -328,7 +321,7 @@ class bdpcIndexMonitor(threading.Thread):
 					f_all.write(f'{kwd}\t{my_real_url}\t{my_order}\t{tpl}\t{group}\n')
 					f_all.flush()
 					lock.release()
-					time.sleep(0.2)
+					time.sleep(0.23)
 					real_urls_rank.append((my_real_url, my_order, tpl))
 
 				domain_url_dicts = self.get_top_domains(real_urls_rank)
@@ -364,7 +357,7 @@ if __name__ == "__main__":
 	driver = get_driver(chrome_path,chromedriver_path,ua)
 	webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
 	print(f'webdriver+chrome的pid:{webdriver_chrome_ids}')
-	q, group_list = bdpcIndexMonitor.read_excel('城市大词+竞价转化词_city.xlsx')  # 关键词队列及分类
+	q = bdpcIndexMonitor.read_excel('2021kwd_url_core_city_表头.xlsx')  # 关键词队列及分类
 	all_num = q.qsize()  # 总词数
 	f = open(f'{today}bdpc1_index_info.txt', 'w+', encoding="utf-8")
 	f_all = open(f'{today}bdpc1_index_all.txt', 'w+', encoding="utf-8")

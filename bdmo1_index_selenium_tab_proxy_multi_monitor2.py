@@ -407,10 +407,10 @@ class bdmoIndexMonitor(threading.Thread):
 if __name__ == "__main__":
 	OneHandle_UseNum = 1 # 计数1个handle打开几次网页(防止浏览器崩溃)
 	Proxyauth_Plugin_Path = create_proxyauth_extension(
-    tunnelhost="tps254.kdlapi.com",  # 隧道域名
-    tunnelport="15818",  # 端口号
-    proxy_username="t13480148503490",  # 用户名
-    proxy_password="dt805x7k"  # 密码
+    tunnelhost="tps254.xxxx.com",  # 隧道域名
+    tunnelport="xxxx",  # 端口号
+    proxy_username="xxx",  # 用户名
+    proxy_password="xxx"  # 密码
 )
 	local_time = time.localtime()
 	today = time.strftime('%Y%m%d',local_time)

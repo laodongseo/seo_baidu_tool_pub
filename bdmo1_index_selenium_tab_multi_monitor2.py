@@ -13,7 +13,7 @@ selenium持续操作浏览器浏览器会崩溃!所以
 	所以首页排名有可能大于10
   2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
 	提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
-  3)2020kwd_url_core_city.xlsx:sheet名为关键词种类,sheet第一列放关键词
+  3)2020kwd_url_core_city.xlsx:sheet名为关键词种类,sheet的kwd列放关键词
 结果:
 	bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
 	bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成

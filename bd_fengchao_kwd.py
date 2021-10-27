@@ -3,7 +3,7 @@
 www2.baidu.com竞价后台拓词
 登录抓包填写userid
 登录抓包填写token
-抓包复制cookie
+抓包复制cookie到cookie.txt
 """
 import threading
 import queue
@@ -60,7 +60,8 @@ def post_html(kwd,retry=1):
 def parse_html(html):
 	df = pd.DataFrame(dtype=object)
 	if html['status'] == 0:
-		kwd_items = html['data']['keywordRecommendItems'] if 'keywordRecommendItems' in html['data'] else []
+		html_data = html['data'] if 'data' in html else {}
+		kwd_items = html_data['keywordRecommendItems'] if 'keywordRecommendItems' in html_data else []
 		df = pd.DataFrame(kwd_items)
 	return df
 
@@ -76,11 +77,14 @@ def main():
 			continue
 		df = parse_html(html)
 		if df.shape[0] > 0:
+			print(f'{kwd}:拓词{df.shape[0]}个')
 			if IsHeader == 0:
 				df.to_csv(f'fengchao_kwd_{now}.csv',encoding='utf_8_sig',mode='w+',index=False)
 				IsHeader = 1
 			else:
 				df.to_csv(f'fengchao_kwd_{now}.csv',encoding='utf_8_sig',mode='a+',index=False,header=False)
+		else:
+			print(f'{kwd},---无数据')
 		q.task_done()
 		time.sleep(3)
 
@@ -89,8 +93,8 @@ def main():
 if __name__ == "__main__":
 	IsHeader = 0 # df.to_csv只第一行写表头
 	q = get_kwd(txt_path = 'kwd.txt') # 关键词文件
-	MyUserid = 11282149 # 登录抓包填写userid
-	MyToken = 644925111 # 登录抓包填写token
+	MyUserid = xxxx # 登录抓包填写userid
+	MyToken = xxxx # 登录抓包填写token
 	Reqid = GenSecretKey()
 	Eventid = GenSecretKey()
 	PostUrl = f"https://fengchao.baidu.com/hairuo/request.ajax?path=lightning%2FGET%2FKeywordSuggestService%2FgetKeywordRecommendPassive&reqid={Reqid}"

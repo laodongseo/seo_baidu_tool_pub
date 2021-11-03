@@ -12,7 +12,7 @@ selenium持续操作浏览器浏览器会崩溃!所以:
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
-  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet的kwd列放关键词
+  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
 	bdpc1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
 	bdpc1_index_all.txt:serp所有url及样式特征
@@ -163,15 +163,15 @@ class bdpcIndexMonitor(threading.Thread):
 
 	# 获取源码
 	def get_html(self,kwd):
-		global driver,OneHandle_UrlNum
-		if OneHandle_UrlNum > 3:
-			OneHandle_UrlNum = 1
+		global driver,OneHandle_UseNum
+		if OneHandle_UseNum > OneHandle_MaxNum:
+			OneHandle_UseNum = 1
 			# driver.switch_to.new_window('tab') # selenium4
 			driver.execute_script("window.open('https://www.baidu.com/')")
 			close_handle()
 		else:
 			driver.get('https://www.baidu.com/')
-		OneHandle_UrlNum += 1
+		OneHandle_UseNum += 1
 		input = WebDriverWait(driver, 30).until(
 			EC.visibility_of_element_located((By.ID, "kw"))
 		)
@@ -345,7 +345,7 @@ class bdpcIndexMonitor(threading.Thread):
 
 
 if __name__ == "__main__":
-	OneHandle_UrlNum = 1 # 计数1个标签打开几个网页(防止浏览器崩溃)
+	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开网页次数(防止浏览器崩溃)
 	local_time = time.localtime()
 	today = time.strftime('%Y%m%d', local_time)
 	list_ua = [i.strip() for i in open('ua_pc.txt', 'r', encoding='utf-8')]

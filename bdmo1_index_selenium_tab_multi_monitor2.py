@@ -13,7 +13,7 @@ selenium持续操作浏览器浏览器会崩溃!所以
 	所以首页排名有可能大于10
   2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
 	提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
-  3)2020kwd_url_core_city.xlsx:sheet名为关键词种类,sheet的kwd列放关键词
+  3)2020kwd_url_core_city.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
 	bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
 	bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成
@@ -153,19 +153,19 @@ class bdmoIndexMonitor(threading.Thread):
 
 	# 获取源码,有异常由run函数的try捕获
 	def get_html(self,kwd):
-		global driver,OneHandle_UrlNum
+		global driver,OneHandle_UseNum
 		user_agent = random.choice(user_agents)
 		cookie_str = get_cookie()
 		driver.execute_cdp_cmd("Network.enable", {})
 		driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": {"User-Agent":user_agent,'Cookie':cookie_str}})
-		if OneHandle_UrlNum > 3:
-			OneHandle_UrlNum = 0
+		if OneHandle_UseNum > OneHandle_MaxNum:
+			OneHandle_UseNum = 0
 			# driver.switch_to.new_window('tab') # selenium4
 			driver.execute_script("window.open('https://m.baidu.com/')")
 			close_handle()
 		else:
 			driver.get('https://m.baidu.com/')
-		OneHandle_UrlNum += 1
+		OneHandle_UseNum += 1
 		input = WebDriverWait(driver, 30).until(
 			EC.visibility_of_element_located((By.ID, "index-kw"))
 		)
@@ -326,7 +326,7 @@ class bdmoIndexMonitor(threading.Thread):
 				
 
 if __name__ == "__main__":
-	OneHandle_UrlNum = 1 # 计数1个handle打开网页次数(防止浏览器崩溃)
+	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开网页次数(防止浏览器崩溃)
 	local_time = time.localtime()
 	today = time.strftime('%Y%m%d',local_time)
 	user_agents = get_ua('ua_mo.txt')

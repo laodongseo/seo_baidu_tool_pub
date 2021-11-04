@@ -13,7 +13,7 @@ selenium持续操作浏览器浏览器会崩溃!所以
 	所以首页排名有可能大于10
   2)serp上自然排名mu属性值为排名url,特殊样式mu为空或不存在,
 	提取article里url,该url是baidu域名,二次访问才能获得真实url,本脚本直接取baidu链接
-  3)2020kwd_url_core_city.xlsx:sheet名为关键词种类,sheet的kwd列放关键词
+  3)2020kwd_url_core_city.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
 	bdmo1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
 	bdmo1_index_all.txt:serp所有url及样式特征,依此统计各域名首页覆盖率-单写脚本完成
@@ -25,8 +25,7 @@ import queue
 import time
 import json
 from urllib.parse import urlparse
-from openpyxl import load_workbook
-from openpyxl import Workbook
+import pandas as pd
 import time
 import gc
 import random
@@ -40,6 +39,7 @@ from selenium.webdriver.chrome.options import Options
 import traceback
 import tld
 import psutil
+import string,zipfile
 
 
 cookie_str = """
@@ -187,7 +187,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
 	option.add_argument("--disable-features=NetworkService")
 	option.add_argument("window-size=800,700")
 	option.add_argument("--disable-features=VizDisplayCompositor")
-	option.add_argument('headless')
+	# option.add_argument('headless')
 	option.add_argument('log-level=3') #屏蔽日志
 	option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
 	option.add_argument('--ignore-certificate-errors')
@@ -214,20 +214,13 @@ class bdmoIndexMonitor(threading.Thread):
 	@staticmethod
 	def read_excel(filepath):
 		q = queue.Queue()
-		group_list = []
-		kwd_dict = {}
-		wb_kwd = load_workbook(filepath)
-		for sheet_obj in wb_kwd:
-			sheet_name = sheet_obj.title
-			group_list.append(sheet_name)
-			kwd_dict[sheet_name]= []
-			col_a = sheet_obj['A']
-			for cell in col_a:
-				kwd = (cell.value)
-				# 加个判断吧
-				if kwd:
-					q.put([sheet_name,kwd])
-		return q, group_list
+		df_dict = pd.read_excel(filepath,sheet_name=None)
+		for sheet_name,df_sheet in df_dict.items():
+			values = df_sheet['kwd'].dropna().values
+			for kwd in values:
+				if str(kwd).strip():
+					q.put((sheet_name,kwd))
+		return q
 
 
 	# 获取源码,有异常由run函数的try捕获
@@ -237,7 +230,7 @@ class bdmoIndexMonitor(threading.Thread):
 		cookie_str = get_cookie()
 		driver.execute_cdp_cmd("Network.enable", {})
 		driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": {"User-Agent":user_agent,'Cookie':cookie_str}})
-		if OneHandle_UseNum > 3:
+		if OneHandle_UseNum > OneHandle_MaxNum:
 			OneHandle_UseNum = 0
 			# driver.switch_to.new_window('tab') # selenium4
 			driver.execute_script("window.open('https://m.baidu.com/')")
@@ -267,8 +260,8 @@ class bdmoIndexMonitor(threading.Thread):
 		except Exception as e:
 			print(e)
 			if '安全验证' in driver.title:
-					print(driver.title,'sleep 60s')
-					time.sleep(60)
+					print(driver.title,'sleep 5s')
+					time.sleep(5)
 			return
 		html = driver.page_source
 		now_url = driver.current_url
@@ -401,16 +394,16 @@ class bdmoIndexMonitor(threading.Thread):
 				del kwd,group
 				gc.collect()
 				q.task_done()
-				time.sleep(2.5)
+				time.sleep(0.2)
 				
 
 if __name__ == "__main__":
-	OneHandle_UseNum = 1 # 计数1个handle打开几次网页(防止浏览器崩溃)
+	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开几次网页(防止浏览器崩溃)
 	Proxyauth_Plugin_Path = create_proxyauth_extension(
-    tunnelhost="tps254.xxxx.com",  # 隧道域名
-    tunnelport="xxxx",  # 端口号
-    proxy_username="xxx",  # 用户名
-    proxy_password="xxx"  # 密码
+    tunnelhost="tps254.kdlapi.com",  # 隧道域名
+    tunnelport="15818",  # 端口号
+    proxy_username="t13480148503490",  # 用户名
+    proxy_password="dt805x7k"  # 密码
 )
 	local_time = time.localtime()
 	today = time.strftime('%Y%m%d',local_time)
@@ -424,7 +417,7 @@ if __name__ == "__main__":
 	driver = get_driver(chrome_path,chromedriver_path,ua)
 	webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
 	print(f'webdriver+chrome的id:{webdriver_chrome_ids}')
-	q,group_list = bdmoIndexMonitor.read_excel('2021kwd_url_core_city.xlsx')  # 关键词队列及分类
+	q = bdmoIndexMonitor.read_excel('城市大词+竞价转化词_city_表头.xlsx')  # 关键词队列及分类
 	f = open(f'{today}bdmo1_index_info.txt','w+',encoding="utf-8")
 	f_all = open(f'{today}bdmo1_index_all.txt','w+',encoding="utf-8")
 	file_path = f.name

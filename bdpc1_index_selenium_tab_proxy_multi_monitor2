@@ -12,7 +12,7 @@ selenium持续操作浏览器浏览器会崩溃!所以:
 提示:
   1)含自然排名和百度开放平台的排名
   2)百度开放平台的样式mu属性值为排名url,mu不存在提取article里的url
-  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet的kwd列放关键词
+  3)2020xiaoqu_kwd_city_new.xlsx:sheet名为关键词种类,sheet第一列放关键词
 结果:
 	bdpc1_index_info.txt:各监控站点词的排名及url,如有2个url排名,只取第一个
 	bdpc1_index_all.txt:serp所有url及样式特征
@@ -239,7 +239,7 @@ class bdpcIndexMonitor(threading.Thread):
 	# 获取源码
 	def get_html(self,kwd):
 		global driver,OneHandle_UseNum
-		if OneHandle_UseNum > 3:
+		if OneHandle_UseNum > OneHandle_MaxNum:
 			OneHandle_UseNum = 1
 			# driver.switch_to.new_window('tab') # selenium4
 			driver.execute_script("window.open('https://www.baidu.com/')")
@@ -420,7 +420,7 @@ class bdpcIndexMonitor(threading.Thread):
 
 
 if __name__ == "__main__":
-	OneHandle_UseNum = 1 # 计数1个handle打开几次网页(防止浏览器崩溃)
+	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开几次网页(防止浏览器崩溃)
 	Proxyauth_Plugin_Path = create_proxyauth_extension(
     tunnelhost="tps254.kdlapi.com",  # 隧道域名
     tunnelport="15818",  # 端口号
@@ -438,7 +438,7 @@ if __name__ == "__main__":
 	driver = get_driver(chrome_path,chromedriver_path,ua)
 	webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
 	print(f'webdriver+chrome的pid:{webdriver_chrome_ids}')
-	q = bdpcIndexMonitor.read_excel('2021kwd_url_core_city_表头.xlsx')  # 关键词队列及分类
+	q = bdpcIndexMonitor.read_excel('城市大词+竞价转化词_city_表头.xlsx')  # 关键词队列及分类
 	all_num = q.qsize()  # 总词数
 	f = open(f'{today}bdpc1_index_info.txt', 'w+', encoding="utf-8")
 	f_all = open(f'{today}bdpc1_index_all.txt', 'w+', encoding="utf-8")

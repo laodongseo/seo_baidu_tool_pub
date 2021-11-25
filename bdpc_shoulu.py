@@ -64,15 +64,11 @@ class BdpcShoulu(threading.Thread):
         doc = pq(html)
         title = doc('title').text()
         if '_百度搜索' in title and 'https://www.baidu.com/s?ie=utf-8' in url:
-            try:
-                a_list = doc('h3.t a').items()
-            except Exception as e:
-                print('未提取到serp上的解密url', e)
-            else:
-                for a in a_list:
-                    encrypt_url = a.attr('href')
-                    if encrypt_url.find('http://www.baidu.com/link?url=') == 0:
-                        encrypt_url_list.append(encrypt_url)
+            a_list = doc('h3.t a').items()
+            for a in a_list:
+                encrypt_url = a.attr('href')
+                if encrypt_url.find('http://www.baidu.com/link?url=') == 0:
+                    encrypt_url_list.append(encrypt_url)
         else:
             print(title,'源码异常,可能反爬')
             time.sleep(30)
@@ -81,7 +77,6 @@ class BdpcShoulu(threading.Thread):
 
     # 解密某条加密url
     def decrypt_url(self,encrypt_url,my_header,retry=1):
-        real_url = None # 默认None
         try:
             encrypt_url = encrypt_url.replace('http://','https://')
             r = requests.head(encrypt_url,headers=my_header,timeout=10)
@@ -92,7 +87,8 @@ class BdpcShoulu(threading.Thread):
                 self.decrypt_url(encrypt_url,retry-1)
         else:
             real_url = r.headers['Location']
-        return real_url
+            return real_url
+
 
     # 获取结果页真实url
     def get_real_urls(self, encrypt_url_list,my_header):

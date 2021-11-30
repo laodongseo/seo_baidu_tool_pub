@@ -4,6 +4,7 @@ www2.baidu.com竞价后台拓词
 登录抓包填写userid
 登录抓包填写token
 抓包复制cookie到cookie.txt
+准备关键词kwd.txt
 """
 import threading
 import queue
@@ -12,6 +13,7 @@ import requests
 import random
 import time
 import json
+import traceback
 
 
 
@@ -71,32 +73,40 @@ def main():
 	now = int(time.time())
 	while True:
 		kwd = q.get()
-		html = post_html(kwd)
-		if not html:
-			q.task_done()
-			continue
-		df = parse_html(html)
-		if df.shape[0] > 0:
-			print(f'{kwd}:拓词{df.shape[0]}个')
-			if IsHeader == 0:
-				df.to_csv(f'fengchao_kwd_{now}.csv',encoding='utf_8_sig',mode='w+',index=False)
-				IsHeader = 1
-			else:
-				df.to_csv(f'fengchao_kwd_{now}.csv',encoding='utf_8_sig',mode='a+',index=False,header=False)
+		try:
+			html = post_html(kwd)
+			if not html:
+				continue
+			df = parse_html(html)
+		except Exception as e:
+			traceback.print_exc()
 		else:
-			print(f'{kwd},---无数据')
-		q.task_done()
-		time.sleep(3)
+			if df.shape[0] > 0:
+				print(f'{kwd}:拓词{df.shape[0]}个')
+				# 多线程写入文件加锁防止错乱
+				Lock.acquire()
+				if IsHeader == 0:
+					df.to_csv(f'fengchao_kwd_{now}.csv',encoding='utf_8_sig',mode='w+',index=False)
+					IsHeader = 1
+				else:
+					df.to_csv(f'fengchao_kwd_{now}.csv',encoding='utf_8_sig',mode='a+',index=False,header=False)
+				Lock.release()
+			else:
+				print(f'{kwd},---未获取数据,检查cookie及其他')
+		finally:
+			q.task_done()
+			time.sleep(3)
 
 
 
 if __name__ == "__main__":
-	IsHeader = 0 # df.to_csv只第一行写表头
 	q = get_kwd(txt_path = 'kwd.txt') # 关键词文件
-	MyUserid = xxxx # 登录抓包填写userid
-	MyToken = xxxx # 登录抓包填写token
+	MyUserid = 11282149 # 登录抓包填写userid
+	MyToken = 1375899948 # 登录抓包填写token
 	Reqid = GenSecretKey()
 	Eventid = GenSecretKey()
+	Lock = threading.Lock()
+	IsHeader = 0 # 防止追加表头
 	PostUrl = f"https://fengchao.baidu.com/hairuo/request.ajax?path=lightning%2FGET%2FKeywordSuggestService%2FgetKeywordRecommendPassive&reqid={Reqid}"
 	headers = {
 	'authority':'fengchao.baidu.com',
@@ -121,8 +131,8 @@ if __name__ == "__main__":
 	'cookie': open('cookie.txt').readlines()[0].strip(),
 	'user-agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36 Edg/94.0.992.50',
 	}
-	for i in range(1):
-		t = threading.Thread(target=main,)
+	for i in range(2):
+		t = threading.Thread(target=main)
 		t.daemon = True
 		t.start()
 	q.join()

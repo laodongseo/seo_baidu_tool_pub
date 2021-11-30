@@ -40,6 +40,7 @@ import random
 import traceback
 import tld
 import psutil
+import pandas as pd
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -357,7 +358,7 @@ if __name__ == "__main__":
 	driver = get_driver(chrome_path,chromedriver_path,ua)
 	webdriver_chrome_ids = get_webdriver_chrome_ids(driver)
 	print(f'webdriver+chrome的pid:{webdriver_chrome_ids}')
-	q = bdpcIndexMonitor.read_excel('2021kwd_url_core_city_表头.xlsx')  # 关键词队列及分类
+	q = bdpcIndexMonitor.read_excel('2021kwd_price_multi_sheet.xlsx')  # 关键词队列及分类
 	all_num = q.qsize()  # 总词数
 	f = open(f'{today}bdpc1_index_info.txt', 'w+', encoding="utf-8")
 	f_all = open(f'{today}bdpc1_index_all.txt', 'w+', encoding="utf-8")

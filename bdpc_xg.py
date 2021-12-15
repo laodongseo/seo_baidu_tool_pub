@@ -86,9 +86,10 @@ def main():
 		except Exception as e:
 			traceback.print_exc()
 		else:
-			for kwd in kwds:
-				f.write(f'{kwd}\n')
-				print(kwd)
+			str_kwds = '\n'.join(kwds)
+			threadLock.acquire()
+			f.write(f'{str_kwds}\n') # 防止多线程写入错乱
+			threadLock.release()
 			f.flush()
 		finally:
 			del kwd,url
@@ -98,6 +99,7 @@ def main():
 
 
 if __name__ == "__main__":
+	threadLock = threading.Lock()  # 锁
 	# 结果保存文件
 	f = open('bdpc_xg.txt','w',encoding='utf-8')
 	# 关键词队列

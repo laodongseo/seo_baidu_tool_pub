@@ -53,12 +53,12 @@ class BdpcShoulu(threading.Thread):
 
 
 	# 获取serp源码
-	def get_html(self,url,my_header,retry=2):
+	def get_html(self,url,my_header,retry=1):
 		try:
 			r = requests.get(url=url,headers=my_header,timeout=20)
 		except Exception as e:
 			print('获取源码失败',e)
-			time.sleep(10)
+			time.sleep(20)
 			if retry > 0:
 				self.get_html(url,retry-1)
 		else:

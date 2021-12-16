@@ -1,7 +1,7 @@
 # ‐*‐ coding: utf‐8 ‐*‐
 """
 博客:www.python66.com
-查询url是否收录
+查询【自然排名的】url是否收录
 pc_url.txt,一行一个url,必须带http或https
 区分https或者http
 区分https://aaa/bbb和https://aaa/bbb/

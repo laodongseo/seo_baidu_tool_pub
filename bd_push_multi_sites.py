@@ -26,7 +26,6 @@ def push_url(domain,token,all_urls,retry=1):
             print('请求失败,暂停15秒')
             traceback.print_exc()
             time.sleep(15)
-            break
             if retry > 0:
                 push_url(post_url,domain,all_urls,retry-1)
         else:

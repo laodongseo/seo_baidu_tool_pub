@@ -6,9 +6,8 @@ import traceback
 import urllib
 """
 多域名推送
-每个sheet存1个域名数据
-每个sheet的表头：url token   domain
-
+excel每个sheet的表头：url token   domain
+支持多个sheet
 """
 
 
@@ -45,26 +44,27 @@ def push_url(domain,token,all_urls,retry=1):
 
 
 
-
 # 读取excel,每个sheet化成二维列表
-def main(filepath):
+def main_func(filepath):
     df_dict = pd.read_excel(filepath,sheet_name=None)
     for sheet_name,df_sheet in df_dict.items():
-        sheet_urls = df_sheet['url'].values.tolist()
-        domain,token = df_sheet['domain'][0],df_sheet['token'][0]
-        if len(sheet_urls) >1999:
-            list_format = [sheet_urls[i:i + 2000] for i in range(0, len(sheet_urls), 2000)]
-        else:
-            list_format = [sheet_urls]  # 如果连接数量 <2000则取全部连接
-        # 死循环每个域名把配额用到无法接收单次的推送量
-        post_num = 0
-        while 1:
-            res = push_url(domain,token,list_format)
-            time.sleep(1)
-            post_num+=1
-            print(domain,token,post_num,'次')
-            if '下一个' == res:
-                break
+        gb_object = df_sheet.groupby(['domain'])
+        for domain,df_group in gb_object:
+            group_urls = df_group['url'].values.tolist()
+            token = df_group['token'].iloc[0]
+            if len(group_urls) >1999:
+                list_format = [group_urls[i:i + 2000] for i in range(0, len(group_urls), 2000)]
+            else:
+                list_format = [group_urls]  # 如果连接数量 <2000则取全部连接
+            # 死循环每个域名把配额用到无法接收单次的推送量
+            post_num = 0
+            while 1:
+                res = push_url(domain,token,list_format)
+                time.sleep(1)
+                post_num+=1
+                print(domain,token,post_num,'次')
+                if '下一个' == res:
+                    break
 
 
 if __name__ == "__main__":
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         'Content - Length':'83'
     }
 
-    main('租房二手房列表_unique_domain_multi_sheet.xlsx')
+    main_func('xq_zuer.xlsx')
     
     f.close()
 

@@ -64,7 +64,6 @@ def get_driver(chrome_path,chromedriver_path,ua):
 	option.add_experimental_option('useAutomationExtension', False)
 	No_Image_loading = {"profile.managed_default_content_settings.images": 1}
 	option.add_experimental_option("prefs", No_Image_loading)
-	# 屏蔽webdriver特征
 	option.add_argument("--disable-blink-features")
 	option.add_argument("--disable-blink-features=AutomationControlled")
 	driver = webdriver.Chrome(options=option,executable_path=chromedriver_path)
@@ -144,10 +143,17 @@ def main():
 
 if __name__ == "__main__":
 	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开网页次数(防止浏览器崩溃)
-	chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+	chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 	chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
 	ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
 	driver = get_driver(chrome_path,chromedriver_path,ua)
+	# 防止反爬
+	driver.get('http://www.python66.com/stealth.min.js')
+	js_hidden = driver.page_source
+	driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+	  "source": js_hidden
+	})
+	
 	q = read_excel('kwd-vrrw.net.xlsx')
 	CsvFile = 'toutiao_serpUrl_res-vrrw.net.csv'
 	IsHeader =0

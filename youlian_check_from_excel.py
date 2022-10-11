@@ -48,11 +48,11 @@ class Spider_Content(threading.Thread):
 
 	def parse(self, html):
 		if MyDomain in html:
-			a_list = pq('a').items()
+			a_list = pq(html)('a').items()
 			for a in a_list:
 				url  = a.attr('href')
 				text = a.text().strip()
-				if '5i5j.com' in str(url):
+				if MyDomain in str(url):
 					return text,url
 		else:
 			return 0
@@ -62,6 +62,7 @@ class Spider_Content(threading.Thread):
 		while 1:
 			row = q.get()
 			link = row['网址']
+			str_values = '\t'.join(row.to_list())
 			print(link)
 			try:
 				html = self.get_html(link)
@@ -72,7 +73,6 @@ class Spider_Content(threading.Thread):
 			except Exception as e:
 				traceback.print_exc()
 			else:
-				str_values = '\t'.join(row.to_list())
 				with lock:
 					if res_status == 0:
 						f.write(f'{str_values}\t被下链\n')
@@ -83,7 +83,7 @@ class Spider_Content(threading.Thread):
 			finally:
 				q.task_done()
 				gc.collect()
-				time.sleep(0.2)
+				time.sleep(0.1)
 
 
 if __name__ == "__main__":
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 	lock = threading.Lock()
 
 	# 设置线程数
-	for i in list(range(4)):
+	for i in list(range(15)):
 		t = Spider_Content()
 		t.setDaemon(True)
 		t.start()

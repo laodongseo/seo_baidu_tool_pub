@@ -131,11 +131,12 @@ def main():
 			for elements in row_list:
 				row['title'] ,row['url'],row['回答数'],row['是否飘红'] = elements
 				df = row.to_frame().T
-				if IsHeader == 0:
-					df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
-					IsHeader = 1
-				else:
-					df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
+				with lock:
+					if IsHeader == 0:
+						df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
+						IsHeader = 1
+					else:
+						df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
 		finally:
 			q.task_done()
 			time.sleep(3)
@@ -147,10 +148,10 @@ if __name__ == "__main__":
 	chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
 	ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
 	driver = get_driver(chrome_path,chromedriver_path,ua)
-	
 	q = read_excel('kwd-vrrw.net.xlsx')
 	CsvFile = 'toutiao_serpUrl_res-vrrw.net.csv'
 	IsHeader =0
+	lock = threading.Lock()
 
 	# driver.get('https://www.toutiao.com')
 	# driver.execute_script('window.alert ("30s内 请设置谷歌允许js弹窗")')

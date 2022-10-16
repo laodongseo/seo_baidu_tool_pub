@@ -1,12 +1,12 @@
 """
-读取excel中的utl
-采集头条回答
+读取excel中的url(so.toutiao.com)
+采集头条的回答
 """
 
 #‐*‐coding:utf‐8‐*‐
 import requests
 import threading
-import queue,re
+import queue,re,json
 from pyquery import PyQuery as pq
 import time,traceback,random
 from urllib import parse
@@ -37,17 +37,16 @@ def set_driver(driver):
 		  "source": js_hidden
 		})
 
-		# 设置允许弹窗(headless模式执行失败)
-		driver.get(url_pop)
-		time.sleep(0.5)
-		driver.execute_script(js_allow_pop)
+		# 设置允许弹窗(headless模式会执行失败)
+		# driver.get(url_pop)
+		# time.sleep(0.5)
+		# driver.execute_script(js_allow_pop)
 	except Exception as e:
 		traceback.print_exc()
 	finally:
 		return driver
 
 def get_driver(chrome_path,chromedriver_path,ua):
-	ua = ua
 	option = Options()
 	option.binary_location = chrome_path
 	# option.add_argument('disable-infobars')
@@ -73,7 +72,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
 	return driver
 
 
-def close_handle():
+def close_handle(driver):
 	if len(driver.window_handles) > 1:
 		for handle in driver.window_handles[0:-1]:
 			driver.switch_to.window(handle)
@@ -91,22 +90,23 @@ def read_excel(filepath):
 		q = queue.Queue()
 		df = pd.read_excel(filepath).dropna()
 		bool_con = df['url'].str.contains(r'so.toutiao.com')
+		print('so.toutiao.com:',bool_con.sum())
 		for index,row in df[bool_con].iterrows():
 			q.put(row)
 		return q
 
 
 # 获取源码
-def get_html(url):
+def get_html(driver,url):
 	global OneHandle_UseNum
 	if OneHandle_UseNum > OneHandle_MaxNum:
 		driver.execute_script("window.open('')")
 		time.sleep(1)
-		close_handle()
+		close_handle(driver)
 	driver.get(url)
 	OneHandle_UseNum += 1
 	try:
-		div_obj=WebDriverWait(driver,10,0.5).until(EC.presence_of_element_located((By.CLASS_NAME, "s-container")))
+		WebDriverWait(driver,10,0.5).until(EC.presence_of_element_located((By.CLASS_NAME, "s-container")))
 	except Exception as e:
 		traceback.print_exc()
 	else:
@@ -115,60 +115,70 @@ def get_html(url):
 
 def parse(html):
 	line_list = []
-	doc= pq(str(html))
+	doc = pq(str(html))
 	title = doc('title').text()
 	if '大家都在问' in title:
-		div_list = doc('ul.list li.answer_box_1DdKgE').items()
-		for div in div_list:
-			answer_author = div('.auth_info_8R-GB0 h3').text().strip()
-			answer_time = div('.auth_info_8R-GB0 .f-s-s span').text().strip()
-			answer_html = ''
-			p_list = div('.answer_layout_3yYc6m p').items()
-			answer_html = ''.join([f'<p>　　{p.text().strip()}</p>' for p in p_list if p.text().strip()])
-			if answer_html:
-				answer_len = len(answer_html)
-				line_list.append([answer_author,answer_time,answer_html,answer_len])
+		text_str = doc('script[data-for=s-spa-card-json]').text()
+		dict_content = json.loads(text_str)
+		answer_list = dict_content['data']['question_details']['data']['answers']
+		for answer_dict in answer_list:
+			an_author = answer_dict['uname']
+			an_time = answer_dict['update_time']
+			an_html = answer_dict['content']
+			an_html = f'<add_html>{an_html}</add_html>' # 防止只有1个p标签,find方法返回空
+			doc_answer = pq(str(an_html))
+			p_list = doc_answer.find('p').items()
+			texts = [f'<p>　　{p.text().strip()}</p>' for p in p_list if p.text().strip()]
+			text_html = ''.join(texts)
+			answer_len = len(text_html)
+			line_list.append([an_author,an_time,text_html,answer_len])
 	return line_list
 
 
 # 线程函数 
 def main():
 	global IsHeader
+	driver = get_driver(ChromePath,ChromeDriver_path,UA)
 	while 1:
 		row = q.get()
 		url = row['url']
+		print(url)
 		try:
-			html = get_html(url)
+			html = get_html(driver,url)
 			line_list = parse(html)
 		except Exception as e:
-			traceback.print_exc() 
+			traceback.print_exc()
+			print('出错:',url)
+			print(html,file=open('error.txt','a+',encoding='utf-8'))
+			time.sleep(60)
 		else:
 			if isinstance(line_list,list):
 				for elements in line_list:
 					row['回答人'] ,row['回答时间'],row['答案html'],row['文章长度'] = elements
 					df = row.to_frame().T
-					if IsHeader == 0:
-						df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
-						IsHeader = 1
-					else:
-						df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
+					with lock:
+						if IsHeader == 0:
+							df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
+							IsHeader = 1
+						else:
+							df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
 		finally:
 			q.task_done()
-			time.sleep(3)
+			time.sleep(0.2)
 
 
 if __name__ == "__main__":
 	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开网页次数(防止浏览器崩溃)
-	chrome_path = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
-	chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
-	ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
-	driver = get_driver(chrome_path,chromedriver_path,ua)
-	q = read_excel('toutiao_serpUrl_res-vrrw.net1.xlsx')
+	ChromePath = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+	ChromeDriver_path = 'D:/install/pyhon36/chromedriver.exe'
+	UA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
+	q = read_excel('toutiao_serpUrl_res-vrrw.net.xlsx')
 	CsvFile = 'toutiao_answer_res.csv'
 	IsHeader =0
+	lock = threading.Lock()
 
 	# 设置线程数
-	for i in list(range(1)):
+	for i in list(range(6)):
 		t = threading.Thread(target=main)
 		t.setDaemon(True)
 		t.start()

@@ -1,6 +1,9 @@
 """
 读取excel中的url(so.toutiao.com)
-采集头条的回答
+采集头条回答
+https://so.toutiao.com/s/search_wenda_pc/list/?enter_from=search_result&qid=6682012044142575879&qname=巴顿将军简介？&search_id=202210111458580101500651670659F9DD&enter_answer_id=6688226354514641164&outer_show_aid=6688226354514641164&query=巴顿将军简介&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c79503f9a14a7751bbf8c18413c1904b4483f
+
+https://so.toutiao.com/s/search_wenda_pc/list/?enter_from=search_result&qid=6969477771613651486&qname=柳下惠在论语中出现了哪四次？&search_id=202210111500490101501322044E5858C8&enter_answer_id=6969503404729238028&outer_show_aid=6969503404729238028&query=卫灵公第十五&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c79505405404b1492093cc3956e2ff96777dd
 """
 
 #‐*‐coding:utf‐8‐*‐
@@ -18,6 +21,7 @@ from selenium.webdriver.chrome.options import Options
 import undetected_chromedriver as uc
 import pandas as pd
 from urllib.parse import unquote
+from lxml import etree
 
 
 # 设置允许弹窗
@@ -114,25 +118,29 @@ def get_html(driver,url):
 
 
 def parse(html):
-	line_list = []
 	doc = pq(str(html))
 	title = doc('title').text()
 	if '大家都在问' in title:
+		line_list = []
 		text_str = doc('script[data-for=s-spa-card-json]').text()
 		dict_content = json.loads(text_str)
-		answer_list = dict_content['data']['question_details']['data']['answers']
+		question_detail  = dict_content['data']['question_details']
+		if 'success' not in question_detail['errmsg']:
+			return
+		answer_list  = question_detail['data']['answers']
 		for answer_dict in answer_list:
 			an_author = answer_dict['uname']
 			an_time = answer_dict['update_time']
-			an_html = answer_dict['content']
-			an_html = f'<add_html>{an_html}</add_html>' # 防止只有1个p标签,find方法返回空
-			doc_answer = pq(str(an_html))
-			p_list = doc_answer.find('p').items()
-			texts = [f'<p>　　{p.text().strip()}</p>' for p in p_list if p.text().strip()]
+			
+			an_html = answer_dict['content'].replace('\n','')
+			an_html = re.sub(r'<img.*?/>|<br>','<p>',an_html)
+			html = etree.HTML(an_html)
+			p_list = html.xpath("//p[normalize-space()]")
+			texts = [f'<p>　　{p.text.strip()}</p>' for p in p_list if p.text.strip()]
 			text_html = ''.join(texts)
 			answer_len = len(text_html)
 			line_list.append([an_author,an_time,text_html,answer_len])
-	return line_list
+		return line_list
 
 
 # 线程函数 
@@ -149,7 +157,7 @@ def main():
 		except Exception as e:
 			traceback.print_exc()
 			print('出错:',url)
-			print(html,file=open('error.txt','a+',encoding='utf-8'))
+			print(html,file=f_error)
 			time.sleep(60)
 		else:
 			if isinstance(line_list,list):
@@ -162,8 +170,11 @@ def main():
 							IsHeader = 1
 						else:
 							df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
+			else:
+				f_error.write(f'检查:{url}\n')
 		finally:
 			q.task_done()
+			f_error.flush()
 			time.sleep(0.2)
 
 
@@ -172,13 +183,14 @@ if __name__ == "__main__":
 	ChromePath = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 	ChromeDriver_path = 'D:/install/pyhon36/chromedriver.exe'
 	UA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
+	f_error = open('error.txt','w+',encoding='utf-8')
 	q = read_excel('toutiao_serpUrl_res-vrrw.net.xlsx')
 	CsvFile = 'toutiao_answer_res.csv'
 	IsHeader =0
 	lock = threading.Lock()
 
 	# 设置线程数
-	for i in list(range(6)):
+	for i in list(range(15)):
 		t = threading.Thread(target=main)
 		t.setDaemon(True)
 		t.start()

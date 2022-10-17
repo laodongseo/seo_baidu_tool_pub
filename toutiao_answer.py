@@ -1,9 +1,12 @@
 """
 读取excel中的url(so.toutiao.com)
 采集头条回答
-https://so.toutiao.com/s/search_wenda_pc/list/?enter_from=search_result&qid=6682012044142575879&qname=巴顿将军简介？&search_id=202210111458580101500651670659F9DD&enter_answer_id=6688226354514641164&outer_show_aid=6688226354514641164&query=巴顿将军简介&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c79503f9a14a7751bbf8c18413c1904b4483f
 
-https://so.toutiao.com/s/search_wenda_pc/list/?enter_from=search_result&qid=6969477771613651486&qname=柳下惠在论语中出现了哪四次？&search_id=202210111500490101501322044E5858C8&enter_answer_id=6969503404729238028&outer_show_aid=6969503404729238028&query=卫灵公第十五&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c79505405404b1492093cc3956e2ff96777dd
+有img干扰https://so.toutiao.com/s/search_wenda_pc/list/?enter_from=search_result&qid=6682012044142575879&qname=巴顿将军简介？&search_id=202210111458580101500651670659F9DD&enter_answer_id=6688226354514641164&outer_show_aid=6688226354514641164&query=巴顿将军简介&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c79503f9a14a7751bbf8c18413c1904b4483f
+有br干扰:https://so.toutiao.com/s/search_wenda_pc/list/?enter_from=search_result&qid=6969477771613651486&qname=柳下惠在论语中出现了哪四次？&search_id=202210111500490101501322044E5858C8&enter_answer_id=6969503404729238028&outer_show_aid=6969503404729238028&query=卫灵公第十五&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c79505405404b1492093cc3956e2ff96777dd
+p标签闭合混乱:https://so.toutiao.com/s/search_wenda_pc/list/?qid=6722260228936564995&enter_answer_id=6722264241920803075&enter_from=search_result&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c7950e00153d7ec700a0fcf3ad809cba80e13
+回答是标点:https://so.toutiao.com/s/search_wenda_pc/list/?qid=6692828170564927758&enter_answer_id=6821513734284902668&enter_from=search_result&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c795029cc25d00b8b9e21bc7f2b58e2a560fe
+
 """
 
 #‐*‐coding:utf‐8‐*‐
@@ -92,7 +95,7 @@ def close_handle(driver):
 
 def read_excel(filepath):
 		q = queue.Queue()
-		df = pd.read_excel(filepath).dropna()
+		df = pd.read_excel(filepath).dropna().drop_duplicates(subset=['url'])
 		bool_con = df['url'].str.contains(r'so.toutiao.com')
 		print('so.toutiao.com:',bool_con.sum())
 		for index,row in df[bool_con].iterrows():
@@ -131,15 +134,18 @@ def parse(html):
 		for answer_dict in answer_list:
 			an_author = answer_dict['uname']
 			an_time = answer_dict['update_time']
-			
-			an_html = answer_dict['content'].replace('\n','')
-			an_html = re.sub(r'<img.*?/>|<br>','<p>',an_html)
-			html = etree.HTML(an_html)
-			p_list = html.xpath("//p[normalize-space()]")
-			texts = [f'<p>　　{p.text.strip()}</p>' for p in p_list if p.text.strip()]
-			text_html = ''.join(texts)
-			answer_len = len(text_html)
-			line_list.append([an_author,an_time,text_html,answer_len])
+			an_html = answer_dict['content']
+
+			an_html = re.sub(r'\u3000|\n','',an_html) # 去掉换行和\u3000
+			an_html = re.sub(r'<img.*?/>|<br>','<p>',an_html) # 替换img和br为p
+			text_list = re.split(r'<p>|</p>',an_html)
+			# 是否包含正常回答
+			text_list = [i.strip() for i in text_list if re.search(r'[\u4e00-\u9fff]|[a-zA-Z]',i.strip())]
+			answer_len = len(''.join(text_list))
+			new_textlist = [f'<p>　　{text.strip()}</p>' for text in text_list if text.strip()]
+			text_html = ''.join(new_textlist)
+			if answer_len > 0:
+				line_list.append([an_author,an_time,text_html,answer_len])
 		return line_list
 
 
@@ -175,12 +181,12 @@ def main():
 		finally:
 			q.task_done()
 			f_error.flush()
-			time.sleep(0.2)
+			time.sleep(0.15)
 
 
 if __name__ == "__main__":
 	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开网页次数(防止浏览器崩溃)
-	ChromePath = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+	ChromePath = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 	ChromeDriver_path = 'D:/install/pyhon36/chromedriver.exe'
 	UA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
 	f_error = open('error.txt','w+',encoding='utf-8')
@@ -188,9 +194,9 @@ if __name__ == "__main__":
 	CsvFile = 'toutiao_answer_res.csv'
 	IsHeader =0
 	lock = threading.Lock()
-
+	
 	# 设置线程数
-	for i in list(range(15)):
+	for i in list(range(20)):
 		t = threading.Thread(target=main)
 		t.setDaemon(True)
 		t.start()

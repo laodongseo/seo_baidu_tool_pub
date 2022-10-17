@@ -20,8 +20,35 @@ import undetected_chromedriver as uc
 import pandas as pd
 from urllib.parse import unquote
 
+# 设置允许弹窗
+js_allow_pop = """
+document.querySelector("body > settings-ui").shadowRoot.querySelector("#main").shadowRoot.querySelector("settings-basic-page").shadowRoot.querySelector("#basicPage > settings-section.expanded > settings-privacy-page").shadowRoot.querySelector("#pages > settings-subpage.iron-selected > settings-category-default-radio-group").shadowRoot.querySelector("#enabledRadioOption").shadowRoot.querySelector("#button > div.disc").click()
+""".strip()
+url_pop = 'chrome://settings/content/popups'
 
-def close_handle():
+
+def set_driver(driver):
+	try:
+		# 防止反爬
+		driver.get('http://www.python66.com/stealth.min.js')
+		time.sleep(0.5)
+		js_hidden = driver.page_source
+		driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+		  "source": js_hidden
+		})
+
+		# 设置允许弹窗(headless模式执行失败)
+		# driver.get(url_pop)
+		# time.sleep(0.5)
+		# driver.execute_script(js_allow_pop)
+	except Exception as e:
+		traceback.print_exc()
+	finally:
+		return driver
+
+
+
+def close_handle(driver):
 	if len(driver.window_handles) > 1:
 		for handle in driver.window_handles[0:-1]:
 			driver.switch_to.window(handle)
@@ -56,7 +83,7 @@ def get_driver(chrome_path,chromedriver_path,ua):
 	option.add_argument("--disable-features=NetworkService")
 	option.add_argument("window-size=1000,1080")
 	option.add_argument("--disable-features=VizDisplayCompositor")
-	# option.add_argument('headless')
+	option.add_argument('headless')
 	option.add_argument('log-level=3') #屏蔽日志
 	option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
 	option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
@@ -67,16 +94,17 @@ def get_driver(chrome_path,chromedriver_path,ua):
 	option.add_argument("--disable-blink-features")
 	option.add_argument("--disable-blink-features=AutomationControlled")
 	driver = webdriver.Chrome(options=option,executable_path=chromedriver_path)
+	driver = set_driver(driver)
 	return driver
 
 
 # 获取源码
-def get_html(url):
+def get_html(driver,url):
 	global OneHandle_UseNum
 	if OneHandle_UseNum > OneHandle_MaxNum:
 		driver.execute_script("window.open('')")
 		time.sleep(1)
-		close_handle()
+		close_handle(driver)
 	driver.get(url)
 	OneHandle_UseNum += 1
 	try:
@@ -97,45 +125,47 @@ def parse(html):
 		for div in div_list:
 			a = div('a.text-ellipsis')
 			link = a.attr('href')
-			link = unquote(link, 'utf-8').replace('/search/jump?url=','').replace('\n','')
+			link = unquote(link, 'utf-8').replace('/search/jump?url=','').replace('\n','') if link else ''
 			
 			title_serp = a.text()
 			title = re.sub(r'\s+','',title_serp)
 			# title是否有飘红
-			is_red = '是' if '<em>' in a.html() else '否'
+			is_red = '是' if '<em>' in str(a.html()) else '否'
 
 			huida_num_desc = div('.cs-source-content span:last').text().strip()
 			huida_num = re.sub('共|个|回答>','',huida_num_desc)
 			print(huida_num)
 			if title:
 				row_list.append([title,link,huida_num,is_red])
+		return row_list
 	else:
 		time.sleep(120)
-	return row_list
 
 
 # 线程函数
 def main():
 	global IsHeader
+	driver = get_driver(ChromePath,ChromeDriver_path,UA)
 	while 1:
 		row = q.get()
 		kwd = row['关键词']
 		url = f'https://so.toutiao.com/search?dvpf=pc&source=input&keyword={kwd}&pd=question&page_num=0'
 		try:
-			html = get_html(url)
+			html = get_html(driver,url)
 			row_list = parse(html)
 		except Exception as e:
 			traceback.print_exc() 
 		else:
-			for elements in row_list:
-				row['title'] ,row['url'],row['回答数'],row['是否飘红'] = elements
-				df = row.to_frame().T
-				with lock:
-					if IsHeader == 0:
-						df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
-						IsHeader = 1
-					else:
-						df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
+			if isinstance(row_list,list):
+				for elements in row_list:
+					row['title'] ,row['url'],row['回答数'],row['是否飘红'] = elements
+					df = row.to_frame().T
+					with lock:
+						if IsHeader == 0:
+							df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
+							IsHeader = 1
+						else:
+							df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
 		finally:
 			q.task_done()
 			time.sleep(3)
@@ -143,27 +173,16 @@ def main():
 
 if __name__ == "__main__":
 	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开网页次数(防止浏览器崩溃)
-	chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-	chromedriver_path = 'D:/install/pyhon36/chromedriver.exe'
-	ua = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
-	driver = get_driver(chrome_path,chromedriver_path,ua)
-	# 防止反爬
-	driver.get('http://www.python66.com/stealth.min.js')
-	js_hidden = driver.page_source
-	driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-	  "source": js_hidden
-	})
-	
+	ChromePath = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+	ChromeDriver_path = 'D:/install/pyhon36/chromedriver.exe'
+	UA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
 	q = read_excel('kwd-vrrw.net.xlsx')
-	CsvFile = 'toutiao_serpUrl_res-vrrw.net.csv'
+	CsvFile = 'test.csv'
 	IsHeader =0
 	lock = threading.Lock()
 
-	# driver.get('https://www.toutiao.com')
-	# driver.execute_script('window.alert ("30s内 请设置谷歌允许js弹窗")')
-	# time.sleep(30)
 	# 设置线程数
-	for i in list(range(1)):
+	for i in list(range(3)):
 		t = threading.Thread(target=main)
 		t.setDaemon(True)
 		t.start()

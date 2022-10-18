@@ -139,7 +139,7 @@ def parse(html):
 				row_list.append([title,link,huida_num,is_red])
 		return row_list
 	else:
-		time.sleep(120)
+		time.sleep(60)
 
 
 # 线程函数
@@ -149,26 +149,28 @@ def main():
 	while 1:
 		row = q.get()
 		kwd = row['关键词']
-		url = f'https://so.toutiao.com/search?dvpf=pc&source=input&keyword={kwd}&pd=question&page_num=0'
-		try:
-			html = get_html(driver,url)
-			row_list = parse(html)
-		except Exception as e:
-			traceback.print_exc() 
-		else:
-			if isinstance(row_list,list):
-				for elements in row_list:
-					row['title'] ,row['url'],row['回答数'],row['是否飘红'] = elements
-					df = row.to_frame().T
-					with lock:
-						if IsHeader == 0:
-							df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
-							IsHeader = 1
-						else:
-							df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
-		finally:
-			q.task_done()
-			time.sleep(3)
+		for i in range(StartNum,EndNum+1):
+			url = f'https://so.toutiao.com/search?dvpf=pc&source=input&keyword={kwd}&pd=question&page_num={i}'
+			try:
+				html = get_html(driver,url)
+				row_list = parse(html)
+			except Exception as e:
+				traceback.print_exc()
+				time.sleep(60)
+			else:
+				if isinstance(row_list,list):
+					for elements in row_list:
+						row['title'] ,row['url'],row['回答数'],row['是否飘红'] = elements
+						df = row.to_frame().T
+						with lock:
+							if IsHeader == 0:
+								df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
+								IsHeader = 1
+							else:
+								df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
+			finally:
+				time.sleep(0.15)
+		q.task_done()
 
 
 if __name__ == "__main__":
@@ -177,12 +179,13 @@ if __name__ == "__main__":
 	ChromeDriver_path = 'D:/install/pyhon36/chromedriver.exe'
 	UA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
 	q = read_excel('kwd-vrrw.net.xlsx')
-	CsvFile = 'test.csv'
+	CsvFile = 'kwd-vrrw.net_serpurl.csv'
 	IsHeader =0
 	lock = threading.Lock()
+	StartNum,EndNum = 1,4
 
 	# 设置线程数
-	for i in list(range(3)):
+	for i in list(range(2)):
 		t = threading.Thread(target=main)
 		t.setDaemon(True)
 		t.start()

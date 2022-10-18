@@ -137,7 +137,7 @@ def parse(html):
 			an_html = answer_dict['content']
 
 			an_html = re.sub(r'\u3000|\n','',an_html) # 去掉换行和\u3000
-			an_html = re.sub(r'<img.*?/>|<br>','<p>',an_html) # 替换img和br为p
+			an_html = re.sub(r'<img.*?/.*?>|<br>|<br/>','<p>',an_html) # 替换img和br为p
 			text_list = re.split(r'<p>|</p>',an_html)
 			# 是否包含正常回答
 			text_list = [i.strip() for i in text_list if re.search(r'[\u4e00-\u9fff]|[a-zA-Z]',i.strip())]

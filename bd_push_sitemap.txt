@@ -1,0 +1,89 @@
+# ‐*‐ coding: utf‐8 ‐*‐
+import requests
+import time
+import pandas as pd
+import traceback
+import urllib
+"""
+sitemap.txt的Url推送
+"""
+
+def get_sitemap(sitemap_url):
+	try:
+		headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; rv:2.0.1) Gecko/20100101 Firefox/4.0.1'}
+		r = requests.get(url=sitemap_url,headers=headers,timeout=15)
+	except Exception as e:
+		print('获取源码失败',e)
+		time.sleep(6)
+		if retry > 0:
+			get_sitemap(url,retry-1)
+	else:
+		html = r.text
+		return html
+
+
+# all_urls二维列表,每个元素为2000url
+def push_url(all_urls,retry=1):
+	if  all_urls == []:
+		return '下一个'
+	for data_urls in all_urls:
+		try:
+			str_urls = '\n'.join(data_urls)
+			str_urls = str_urls.encode('utf-8') # 防止中文url报错
+			r = requests.post(api_url,data=str_urls,headers=user_agent,timeout=10)
+		except Exception as e:
+			print('请求失败,暂停15秒')
+			traceback.print_exc()
+			time.sleep(15)
+			if retry > 0:
+				push_url(all_urls,retry-1)
+		else:
+			html = r.json()
+			status = r.status_code
+			if status == 200:
+				if html['success'] > 0:
+					print(html)
+				else:
+					print('推送数据为0,请检查配置')
+					return '下一个'
+			else:
+				print(html)
+				return '下一个'
+
+
+# 读取excel,每个sheet化成二维列表
+def main_func(sitemap_url):
+	sitemap_txt = get_sitemap(sitemap_url)
+	total_urls = sitemap_txt.split('\n')
+	total_urls = [i.strip() for i in total_urls if i.strip()]
+	print('站点url数:',len(total_urls))
+	if len(total_urls) >1999:
+		list_format = [total_urls[i:i + 2000] for i in range(0, len(total_urls), 2000)]
+	else:
+		list_format = [total_urls]  # 如果连接数量 <2000则取全部连接
+	# 死循环每个域名把配额用到无法接收单次的推送量
+	post_num = 0
+	while 1:
+		res = push_url(list_format)
+		time.sleep(1)
+		post_num+=1
+		print(post_num,'次')
+		if '下一个' == res:
+			break
+
+
+if __name__ == "__main__":
+	sitemap_url = 'http://zhi.python66.com/sitemap.txt'
+	api_url = 'http://data.zz.baidu.com/urls?site=zhi.python66.com&token=tfkrX8WWhCT0WGCW'
+	f = open('push_fail.txt','w',encoding='utf-8') # 推送失败的url
+	user_agent = {
+		'User - Agent':'curl / 7.12.1',
+		'Host':'data.zz.baidu.com',
+		'Content - Type':'text/plain',
+		'Content - Length':'83'
+	}
+
+	main_func(sitemap_url)
+
+	f.close()
+

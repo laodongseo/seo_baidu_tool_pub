@@ -6,6 +6,7 @@
 有br干扰:https://so.toutiao.com/s/search_wenda_pc/list/?enter_from=search_result&qid=6969477771613651486&qname=柳下惠在论语中出现了哪四次？&search_id=202210111500490101501322044E5858C8&enter_answer_id=6969503404729238028&outer_show_aid=6969503404729238028&query=卫灵公第十五&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c79505405404b1492093cc3956e2ff96777dd
 p标签闭合混乱:https://so.toutiao.com/s/search_wenda_pc/list/?qid=6722260228936564995&enter_answer_id=6722264241920803075&enter_from=search_result&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c7950e00153d7ec700a0fcf3ad809cba80e13
 回答是标点:https://so.toutiao.com/s/search_wenda_pc/list/?qid=6692828170564927758&enter_answer_id=6821513734284902668&enter_from=search_result&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c795029cc25d00b8b9e21bc7f2b58e2a560fe
+待查：https://so.toutiao.com/s/search_wenda_pc/list/?qid=7041716953056035365&enter_answer_id=7065098494876385830&enter_from=search_result&aid=4916&jtoken=c47d820935b56f1e45ae0f2b729ffa52df0fa9ae4d13f409a370b005eb0492689aeea6f8881750a45f53aaca866c7950d14f7e926c19118d41357983b65564c7
 
 """
 
@@ -136,8 +137,10 @@ def parse(html):
 			an_time = answer_dict['update_time']
 			an_html = answer_dict['content']
 
-			an_html = re.sub(r'\u3000|\n','',an_html) # 去掉换行和\u3000
+			an_html = re.sub(r'\n','',an_html) # 去掉换行
 			an_html = re.sub(r'<img.*?/.*?>|<br>|<br/>|<p\s+>|<\s+p\s+>|<\s+p>','<p>',an_html) # 替换img和br为p
+			an_html = re.sub(r'</p\s+>|<\s+/p\s+>|<\s+/p>','',an_html)
+			an_html = re.sub(r'<\s+/\s+p\s+>','',an_html)
 			text_list = re.split(r'<p>|</p>',an_html)
 			# 是否包含正常回答
 			text_list = [i.strip() for i in text_list if re.search(r'[\u4e00-\u9fff]|[a-zA-Z]',i.strip())]
@@ -172,10 +175,10 @@ def main():
 					df = row.to_frame().T
 					with lock:
 						if IsHeader == 0:
-							df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
+							df.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False,sep='\t')
 							IsHeader = 1
 						else:
-							df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,header=False)
+							df.to_csv(CsvFile,encoding='utf-8-sig',mode='a+',index=False,sep='\t',header=False)
 			else:
 				f_error.write(f'检查:{url}\n')
 		finally:

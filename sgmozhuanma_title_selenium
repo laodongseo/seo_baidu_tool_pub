@@ -1,0 +1,148 @@
+# -*- coding: utf-8 -*-
+"""
+查询搜狗M端的收录
+"""
+
+import requests,time,re
+from pyquery import PyQuery as pq
+import queue
+import threading
+import traceback   
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+
+
+
+# 设置允许弹窗
+js_allow_pop = """
+document.querySelector("body > settings-ui").shadowRoot.querySelector("#main").shadowRoot.querySelector("settings-basic-page").shadowRoot.querySelector("#basicPage > settings-section.expanded > settings-privacy-page").shadowRoot.querySelector("#pages > settings-subpage.iron-selected > settings-category-default-radio-group").shadowRoot.querySelector("#enabledRadioOption").shadowRoot.querySelector("#button > div.disc").click()
+""".strip()
+url_pop = 'chrome://settings/content/popups'
+
+
+def set_driver(driver):
+	try:
+		# 防止反爬
+		driver.get('http://www.python66.com/stealth.min.js')
+		time.sleep(0.5)
+		js_hidden = driver.page_source
+		driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+		  "source": js_hidden
+		})
+
+		# 设置允许弹窗(headless模式执行失败)
+		# driver.get(url_pop)
+		# time.sleep(0.5)
+		# driver.execute_script(js_allow_pop)
+	except Exception as e:
+		traceback.print_exc()
+	finally:
+		return driver
+
+
+
+def close_handle(driver):
+	if len(driver.window_handles) > 1:
+		for handle in driver.window_handles[0:-1]:
+			driver.switch_to.window(handle)
+			time.sleep(1)
+			driver.close()
+		# 检测关闭结束
+		while True:
+			if len(driver.window_handles) == 1:
+				break
+		# 切到唯一窗口
+		driver.switch_to.window(driver.window_handles[0])
+
+
+
+def get_driver(chrome_path,chromedriver_path,ua):
+	ua = ua
+	option = Options()
+	option.binary_location = chrome_path
+	# option.add_argument('disable-infobars')
+	option.add_argument("user-agent=" + ua)
+	option.add_argument("--no-sandbox")
+	option.add_argument("--disable-dev-shm-usage")
+	option.add_argument("--disable-gpu")
+	option.add_argument("--disable-features=NetworkService")
+	option.add_argument("window-size=1000,1080")
+	option.add_argument("--disable-features=VizDisplayCompositor")
+	# option.add_argument('headless')
+	option.add_argument('log-level=3') #屏蔽日志
+	option.add_argument('--ignore-certificate-errors-spki-list') #屏蔽ssl error
+	option.add_argument('-ignore -ssl-errors') #屏蔽ssl error
+	option.add_experimental_option("excludeSwitches", ["enable-automation"]) 
+	option.add_experimental_option('useAutomationExtension', False)
+	No_Image_loading = {"profile.managed_default_content_settings.images": 1}
+	option.add_experimental_option("prefs", No_Image_loading)
+	option.add_argument("--disable-blink-features")
+	option.add_argument("--disable-blink-features=AutomationControlled")
+	driver = webdriver.Chrome(options=option,executable_path=chromedriver_path)
+	driver = set_driver(driver)
+	return driver
+
+
+
+# 获取源码
+def get_html(driver,url):
+	global OneHandle_UseNum
+	if OneHandle_UseNum > OneHandle_MaxNum:
+		driver.execute_script("window.open('')")
+		time.sleep(1)
+		close_handle(driver)
+	driver.get(url)
+	OneHandle_UseNum += 1
+	try:
+		div_obj=WebDriverWait(driver,10,0.5).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+	except Exception as e:
+		traceback.print_exc()
+	else:
+		html = driver.page_source
+		return html
+
+
+def main():
+	driver = get_driver(ChromePath,ChromeDriver_path,UA)
+	while True:
+		domain = q.get()
+		url = f'http://wap.sogou.com/ntcweb?icfa=1301083&page=1&from=newsretry&g_ut=3&url=http://{domain}'
+		html = get_html(driver,url)
+		if not html:
+			q.task_done()
+			q.put(domain)
+			time.sleep(30)
+			continue
+		titleObj = re.search('<title>(.*?)</title>',html,re.S|re.I)
+		title = titleObj.group(1)
+		print(domain,title)
+		with lock:
+				print(f'{domain}\t{title}',file=file)
+				file.flush()
+		q.task_done()
+		time.sleep(1)
+
+
+if __name__ == "__main__":
+	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开网页次数(防止浏览器崩溃)
+	ChromePath = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+	ChromeDriver_path = r'D:\install\pyhon36\chromedriver.exe'
+	UA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
+
+	q = queue.Queue()
+	lock = threading.Lock()
+	file=open('sgmo_zhuanma_title.txt',encoding='utf-8',mode='w+')
+	for i in open('domains.txt','r',encoding='utf-8'):
+		i = i.strip()
+		q.put(i)
+
+	for i in range(1):
+		t = threading.Thread(target=main)
+		t.setDaemon(True)
+		t.start()
+	q.join()
+
+	print('end...')

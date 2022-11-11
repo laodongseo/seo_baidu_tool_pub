@@ -13,41 +13,37 @@ from urllib.parse import urlparse
 import time
 import gc
 import random
+from random import choice
+from urllib.parse import quote
 requests.packages.urllib3.disable_warnings()
 
 
-cookie_str = """
-BIDUPSID=F2515E4F29BB88B255962F2CFE19C3F9; PSTM=1646355832; __yjs_duid={0}; BD_UPN=12314353; BAIDUID=468546726793196028473969D2F035C8:SL=0:NR=10:FG=1; BDUSS=GZ0N0Z4MWNRVlBHZzRLblcwRjAtbGpXcVJzNUNBZFVIcDJoeE9uSGh4Y0FZeGxqRUFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADW8WIA1vFiT; BDUSS_BFESS=GZ0N0Z4MWNRVlBHZzRLblcwRjAtbGpXcVJzNUNBZFVIcDJoeE9uSGh4Y0FZeGxqRUFBQUFBJCQAAAAAAAAAAAEAAADag5oxzI2IkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADW8WIA1vFiT; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; H_WISE_SIDS=110085_180636_194529_196428_197471_204906_209568_210301_210322_211435_211985_212296_212874_213038_213346_214794_215730_216207_216714_216770_216844_216941_217084_217167_218548_219065_219743_219942_219946_220392_220639_220663_221121_221317_221409_221440_221468_221479_221502_221527_221697_221874_221921_222130_222299_222396_222618_222619_222625_222780_222862_223064_223192_223240_223253_223343_223374_223396_223476_223537_223595_223627_223765_223811_223824_223859_224014_224045_224055_224086_224098_224116_224141_224195_224428_224441_224632_224859_224915_225204_225245_225285_225341_225370_225409_225436_225485_225741_225765_225849; H_WISE_SIDS_BFESS=110085_180636_194529_196428_197471_204906_209568_210301_210322_211435_211985_212296_212874_213038_213346_214794_215730_216207_216714_216770_216844_216941_217084_217167_218548_219065_219743_219942_219946_220392_220639_220663_221121_221317_221409_221440_221468_221479_221502_221527_221697_221874_221921_222130_222299_222396_222618_222619_222625_222780_222862_223064_223192_223240_223253_223343_223374_223396_223476_223537_223595_223627_223765_223811_223824_223859_224014_224045_224055_224086_224098_224116_224141_224195_224428_224441_224632_224859_224915_225204_225245_225285_225341_225370_225409_225436_225485_225741_225765_225849; H_PS_PSSID=36552_36460_36641_37112_37139_36885_34813_36917_37003_37175_37135_26350_36862_22157; sug=3; sugstore=0; ORIGIN=2; bdime=20100; H_PS_645EC=d498njo38owD%2BjMNQRazj2tUTVAkJI%2B%2BO9pGUBTd4kA32odXVVtfB97kltoAvi5I6zNP; BAIDUID_BFESS=468546726793196028473969D2F035C8:SL=0:NR=10:FG=1
-"""
 
-# 生成随机cookie
-def get_uid():
-	seed = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	lis = []
-	[lis.append(random.choice(seed)) for _ in range(33)]
-	uid = ''.join(lis)
-	return uid
+RSV_T = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/'
+RSV_PQ = '123456789abcdef'
 
-
-# 只解密加密url用
 def get_header():
-	my_header = {
-		'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-		'Accept-Encoding': 'deflate',
-		'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-		'Cache-Control': 'max-age=0',
-		'Connection': 'keep-alive',
-		'Cookie': cookie_str.strip().format(get_uid()),
-		'Host': 'www.baidu.com',
-		'Sec-Fetch-Dest': 'document',
-		'Sec-Fetch-Mode': 'navigate',
-		'Sec-Fetch-Site': 'same-origin',
-		'Sec-Fetch-User': '?1',
-		'Upgrade-Insecure-Requests': '1',
-		'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
-		}
-	return my_header
-
+	headers = {
+		"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+		"Accept-Encoding": "gzip, deflate",
+		"Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+		"Cache-Control": "no-cache",
+		"Connection": "keep-alive",
+		"Cookie": "BIDUPSID=E4EBDADA6EABBA7D547D787F442C64F3; PSTM=1666744901; BAIDUID=E4EBDADA6EABBA7D2F1DAADB50B6B439:FG=1; BD_UPN=123253; BDORZ=B490B5EBF6F3CD402E515D22BCDA1598; BDUSS=d6dU82ZmhEZkdQYXduY2QzeXo2YTVoNzVqZ0o2ek1nTlNyNXJrSUE1a2dWWUJqSUFBQUFBJCQAAAAAAAAAAAEAAACmAH90zeLDstCtu-HBqrrPyMsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDIWGMgyFhjM3; BDUSS_BFESS=d6dU82ZmhEZkdQYXduY2QzeXo2YTVoNzVqZ0o2ek1nTlNyNXJrSUE1a2dWWUJqSUFBQUFBJCQAAAAAAAAAAAEAAACmAH90zeLDstCtu-HBqrrPyMsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDIWGMgyFhjM3; BAIDUID_BFESS=E4EBDADA6EABBA7D2F1DAADB50B6B439:FG=1; channel=baidusearch; ab_sr=1.0.1_NmRiZThjNTcyMTVjOTcyZDgxNzM4ZGIxNjdlMDIxOTc3YzY3NTQ1YmQ5NGIzYTk5MGQxNDA3OTJkM2NiMGJlOGYwYWViZGEyMTgxODI2ZTcxYTZmYmNiMDFlMTM5ZmZiZTY2MjJlNDEzZGFiMTA4YTcyNDk4OWUxMDVhMjAzOTc5ODkxOTg1NmZhZmZkZmQ5ZDAzZDY4YWZhMzMxNzVjY2YxNTdiNzdmMzViODY2NmUyYWFjOTAxY2Y0ZTA5MmY5; BD_HOME=1; BD_CK_SAM=1; PSINO=6; sugstore=0; BA_HECTOR=00a185248101a0048h8h0fk31hlhn7b1b; ZFY=6Uz9JVPmW1RvzbKEqEn1FgPIZ8nXbq2AuV26bx4n2EI:C; COOKIE_SESSION=9_0_6_6_1_11_0_0_5_7_2_0_0_0_0_0_1666764414_0_1666768611%7C9%230_0_1666768611%7C1; delPer=1; H_PS_PSSID=36548_37551_37355_37491_36885_36789_37533_37499_26350_37478_37452; H_PS_645EC=6e93SUzO%2FZ5xyMLfwspagSoXjf6tEwaZmykQfDLIGdmVYRrtDIZUfyfnwcg; baikeVisitId=5f6dff23-0c77-4aae-9d0b-fc663b372d90; BDSVRTM=218",
+		"Host": "www.baidu.com",
+		"Pragma": "no-cache",
+		"Referer": "https://www.baidu.com/",
+		"sec-ch-ua": "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\"",
+		"sec-ch-ua-mobile": "?0",
+		"sec-ch-ua-platform": "\"macOS\"",
+		"Sec-Fetch-Dest": "document",
+		"Sec-Fetch-Mode": "navigate",
+		"Sec-Fetch-Site": "same-origin",
+		"Sec-Fetch-User": "?1",
+		"Upgrade-Insecure-Requests": "1",
+		"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
+	}
+	return headers
 
 class bdpcCoverPage5(threading.Thread):
 
@@ -147,9 +143,17 @@ class bdpcCoverPage5(threading.Thread):
 			print(kwd)
 			for page,page_num in page_dict.items():
 				if page == '首页':
-					url = f"https://www.baidu.com/s?tn=50000021_hao_pg&ie=utf-8&wd={kwd}"
+					rsv_t = ''.join(choice(RSV_T) for _ in range(60))
+					rsv_pq = ''.join([choice(RSV_PQ) for _ in range(8)] + list('000') + [choice(RSV_PQ) for _ in range(5)])
+					rand_time = random.randint(3000,6000)
+					url = f"https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&tn=baidu&wd={quote(kwd)}&oq={quote(kwd)}&rsv_pq={rsv_pq}&rsv_t={quote(rsv_t)}&rqlang=cn&rsv_enter=0&rsv_dl=tb&rsv_btype=t&rsv_sug3=1&rsv_sug1=1&rsv_sug7=100&prefixsug={quote(quote(kwd))}&rsp=8&rsv_sug4={rand_time}&inputT={rand_time}"
+
 				else:
-					url = f"https://www.baidu.com/s?tn=50000021_hao_pg&ie=utf-8&wd={kwd}&pn={page_num}"
+					rsv_t = ''.join(choice(RSV_T) for _ in range(60))
+					rsv_pq = ''.join([choice(RSV_PQ) for _ in range(8)] + list('000') + [choice(RSV_PQ) for _ in range(5)])
+					rand_time = random.randint(3000,6000)
+					url = f"https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&tn=baidu&wd={quote(kwd)}&oq={quote(kwd)}&rsv_pq={rsv_pq}&rsv_t={quote(rsv_t)}&rqlang=cn&rsv_enter=0&rsv_dl=tb&rsv_btype=t&rsv_sug3=1&rsv_sug1=1&rsv_sug7=100&prefixsug={quote(quote(kwd))}&rsp=8&rsv_sug4={rand_time}&inputT={rand_time}&pn={page_num}"
+
 				# print(kwd,url)
 				html_now_url = self.get_html(url)
 				html,now_url = html_now_url if html_now_url else (None,None)
@@ -174,11 +178,11 @@ if __name__ == "__main__":
 	local_time = time.localtime()
 	today = time.strftime('%Y-%m-%d',local_time)
 	q = bdpcCoverPage5.read_excel('kwd.txt')  # 关键词队列
-	page_dict = {'首页':'','二页':10,'三页':20,'四页':30,'五页':40}  # 查询页码
+	page_dict = {'首页':'','二页':10,'三页':20,'四页':30,'五页':40,'六页':50,'七页':60,'八页':70,'九页':80}  # 查询页码
 	lock = threading.Lock()
-	f = open(f'./记录/{today}_bdpc1_page3_info.txt','w',encoding="utf-8")
+	f = open(f'./{today}_bdpc1_serp_info.txt','w',encoding="utf-8")
 	# 设置线程数
-	for i in list(range(1)):
+	for i in list(range(4)):
 		t = bdpcCoverPage5()
 		t.setDaemon(True)
 		t.start()

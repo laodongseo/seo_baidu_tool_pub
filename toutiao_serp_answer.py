@@ -131,6 +131,7 @@ def parse(html):
 		question_detail  = dict_content['data']['question_details']
 		if 'success' not in question_detail['errmsg']:
 			return
+
 		answer_list  = question_detail['data']['answers']
 		for answer_dict in answer_list:
 			an_author = answer_dict['uname']
@@ -138,17 +139,24 @@ def parse(html):
 			an_html = answer_dict['content']
 
 			an_html = re.sub(r'\n','',an_html) # 去掉换行
-			an_html = re.sub(r'<img.*?/.*?>|<br>|<br/>|<p\s+>|<\s+p\s+>|<\s+p>','<p>',an_html) # 替换img和br为p
+			has_img_re = re.search('<img',an_html,re.S|re.I)
+			imgs = ''
+			if has_img_re:
+				img_objs = pq(an_html)('img').items()
+				imgs_list = [img.attr('src') for img in img_objs if img.attr('src')]
+				imgs = '#'.join(imgs_list)
+
+			an_html = re.sub(r'<br>|<br/>|<p\s+>|<\s+p\s+>|<\s+p>','<p>',an_html) # 替换br为p
 			an_html = re.sub(r'</p\s+>|<\s+/p\s+>|<\s+/p>','',an_html)
 			an_html = re.sub(r'<\s+/\s+p\s+>','',an_html)
 			text_list = re.split(r'<p>|</p>',an_html)
-			# 是否包含正常回答
+			# 是否包含中文回答
 			text_list = [i.strip() for i in text_list if re.search(r'[\u4e00-\u9fff]|[a-zA-Z]',i.strip())]
 			answer_len = len(''.join(text_list))
 			new_textlist = [f'<p>　　{text.strip()}</p>' for text in text_list if text.strip()]
 			text_html = ''.join(new_textlist)
 			if answer_len > 0:
-				line_list.append([an_author,an_time,text_html,answer_len])
+				line_list.append([an_author,an_time,text_html,answer_len,imgs])
 		return line_list
 
 
@@ -171,7 +179,7 @@ def main():
 		else:
 			if isinstance(line_list,list):
 				for elements in line_list:
-					row['回答人'] ,row['回答时间'],row['答案html'],row['文章长度'] = elements
+					row['回答人'] ,row['回答时间'],row['答案html'],row['文章长度'],row['图片'] = elements
 					df = row.to_frame().T
 					with lock:
 						if IsHeader == 0:
@@ -199,7 +207,7 @@ if __name__ == "__main__":
 	lock = threading.Lock()
 	
 	# 设置线程数
-	for i in list(range(20)):
+	for i in list(range(1)):
 		t = threading.Thread(target=main)
 		t.setDaemon(True)
 		t.start()

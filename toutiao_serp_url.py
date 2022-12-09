@@ -7,7 +7,7 @@
 #‐*‐coding:utf‐8‐*‐
 import requests
 import threading
-import queue,re
+import queue,re,os
 from pyquery import PyQuery as pq
 import time,traceback,random
 from urllib import parse
@@ -108,7 +108,7 @@ def get_html(driver,url):
 	driver.get(url)
 	OneHandle_UseNum += 1
 	try:
-		div_obj=WebDriverWait(driver,10,0.5).until(EC.presence_of_element_located((By.CLASS_NAME, "cs-tabs-bar-wrap")))
+		div_obj=WebDriverWait(driver,10,0.5).until(EC.presence_of_element_located((By.CLASS_NAME, "global-pc")))
 	except Exception as e:
 		traceback.print_exc()
 	else:
@@ -132,11 +132,11 @@ def parse(html):
 			# title是否有飘红
 			is_red = '是' if '<em>' in str(a.html()) else '否'
 
-			huida_num_desc = div('.cs-source-content span:last').text().strip()
-			huida_num = re.sub('共|个|回答>','',huida_num_desc)
-			print(huida_num)
+			# huida_num_desc = div('.cs-source-content span:last').text().strip()
+			# huida_num = re.sub('共|个|回答>','',huida_num_desc)
+			# print(huida_num)
 			if title:
-				row_list.append([title,link,huida_num,is_red])
+				row_list.append([title,link,is_red])
 		return row_list
 	else:
 		time.sleep(60)
@@ -160,7 +160,7 @@ def main():
 			else:
 				if isinstance(row_list,list):
 					for elements in row_list:
-						row['title'] ,row['url'],row['回答数'],row['是否飘红'] = elements
+						row['title'] ,row['url'],row['是否飘红'] = elements
 						df = row.to_frame().T
 						with lock:
 							if IsHeader == 0:
@@ -178,14 +178,15 @@ if __name__ == "__main__":
 	ChromePath = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 	ChromeDriver_path = 'D:/install/pyhon36/chromedriver.exe'
 	UA = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36'
-	q = read_excel('kwd-vrrw.net.xlsx')
-	CsvFile = 'kwd-vrrw.net_serpurl.csv'
+	kwd_excel = 'res_oneSheet.xlsx'
+	q = read_excel(kwd_excel)
+	CsvFile = os.path.splitext(os.path.basename(kwd_excel))[0] + '_serpurl.csv'
 	IsHeader =0
 	lock = threading.Lock()
-	StartNum,EndNum = 1,4
+	StartNum,EndNum = 1,5
 
 	# 设置线程数
-	for i in list(range(2)):
+	for i in list(range(1)):
 		t = threading.Thread(target=main)
 		t.setDaemon(True)
 		t.start()

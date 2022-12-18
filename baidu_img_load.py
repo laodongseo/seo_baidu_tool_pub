@@ -16,6 +16,8 @@ import urllib
 from urllib.parse import quote
 import json
 import copy
+import demjson
+
 
 
 cookie_str = """
@@ -72,8 +74,8 @@ def get_html(url, retry=1):
 			self.get_html(url, retry - 1)
 	else:
 		html = r.text
-		html = html.replace('\\', '\\\\')
-		return json.loads(html)
+		html = demjson.decode(html)
+		return html
 
 
 
@@ -121,28 +123,30 @@ def run():
 					print(kwd,page_now,n)
 					res_bin = load_img(img_url,img_header)
 					if res_bin:
-						img_path = os.path.join(SavePath,f'{kwd}-{page_now}_{n}.png')
+						t = time.time()
+						tid = int(round(t * 1000))
+						img_path = os.path.join(SavePath,f'{tid}_{page_now}_{n}.png')
 						with open(img_path, 'wb') as f:
 							f.write(res_bin)
 					else:
 						print(res_bin)
 					n+=1
-					time.sleep(4)
+					time.sleep(2)
 		q.task_done()
 
 
 if __name__ == "__main__":
 	start = time.time()
-	SavePath = './bdimg/'
+	SavePath = './imd_load'
 	# 设定每个词抓取前多少页的图片,每个翻页展示图片数
-	PageNum,OnePageImg = 1,30 
+	PageNum,OnePageImg = 3,20 
 	q = read_file('kwd.txt')
 	if not os.path.exists(SavePath):
 		os.mkdir(SavePath)
 
 
 	# 设置线程数
-	for i in list(range(1)):
+	for i in list(range(2)):
 		t = threading.Thread(target=run,)
 		t.setDaemon(True)
 		t.start()

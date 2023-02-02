@@ -129,6 +129,7 @@ def run(url):
 	global IsHeader
 	html = get_html(url)
 	df_page = parse_html(html)
+	print(df_page.shape)
 	if IsHeader == 0:
 		df_page.to_csv(CsvFile,encoding='utf-8-sig',mode='w+',index=False)
 		IsHeader = 1
@@ -142,13 +143,16 @@ if __name__ == '__main__':
 	ChromeDriver_path = 'D:/install/pyhon36/chromedriver.exe'
 	driver = get_driver(ChromePath,ChromeDriver_path)
 	login_5118()
-	CsvFile = '5118-douiyin-杏林传承.csv'
-	IsHeader =0
 
-	start_num ,max_num = 1 , 4
-	kwd_code = '' #搜索词的加密码
-	for i in range(0,max_num *20,20):
-		url = f'https://yxasync2.5118.com/api/videos/DouyinCodeList?SearchText={kwd_code}&searchType=douyinname&pageIndex={start_num}&sort=&praise=0&comment=0&from={i}&size=12&cateid=-1&video_count=0&video_count_end=999999999&video_count_up=0&fans_count=0&fans_count_end=999999999&fans_count_up=0&following_count=0&following_count_end=999999999&following_count_up=0&like_count=0&like_count_end=999999999&like_count_up=0&source=2'
-		run(url)
-		time.sleep(1.5)
-		start_num+=1
+	page_num ,max_num = 1 , 22
+	kwd_code_dict = {'倪师':('80e5a205',22),'倪海厦':('6a3577d6a205',14),'杏林':('7976f476',100)}
+	for name,code_maxnum in kwd_code_dict.items():
+		CsvFile = f'5118-douiyin-{name}.csv'
+		IsHeader =0
+		kwd_code,max_num = code_maxnum
+		for i in range(0,max_num *20,20):
+			print(i,'-----------')
+			url = f'https://yxasync2.5118.com/api/videos/DouyinCodeList?SearchText={kwd_code}&searchType=douyinname&pageIndex={page_num}&sort=&praise=0&comment=0&from={i}&size=12&cateid=-1&video_count=0&video_count_end=999999999&video_count_up=0&fans_count=0&fans_count_end=999999999&fans_count_up=0&following_count=0&following_count_end=999999999&following_count_up=0&like_count=0&like_count_end=999999999&like_count_up=0&source=2'
+			run(url)
+			time.sleep(1.5)
+			page_num+=1

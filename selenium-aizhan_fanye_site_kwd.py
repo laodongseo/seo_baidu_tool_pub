@@ -47,6 +47,14 @@ def get_html(url):
 	else:
 		return html
 
+def is_login(driver):
+	while True:
+		html = driver.page_source
+		doc= pq(str(html))
+		text = doc('.nav-user-infos p').text().strip()
+		if '会员' in text:
+			print('login success...')
+			break
 
 def parse(html):
 	contents = []
@@ -94,17 +102,25 @@ def main():
 
 
 if __name__ == "__main__":
+	js_pop = 'document.querySelector("body > settings-ui").shadowRoot.querySelector("#main").shadowRoot.querySelector("settings-basic-page").shadowRoot.querySelector("#basicPage > settings-section.expanded > settings-privacy-page").shadowRoot.querySelector("#pages > settings-subpage.iron-selected > settings-category-default-radio-group").shadowRoot.querySelector("#enabledRadioOption").shadowRoot.querySelector("#button > div.disc").click()'
 	OneHandle_UseNum,OneHandle_MaxNum = 1,1 # 计数1个handle打开网页次数(防止浏览器崩溃)
 	config_list = [
-	('aizhan_ceo','https://baidurank.aizhan.com/baidu/www.trjcn.com/ceo/0/{0}/position/1/',45)
+	('keep1.net-pc','https://baidurank.aizhan.com/baidu/keep1.net/-1/0/{0}/position/1/',46),
+	('keep1.net-mo','https://baidurank.aizhan.com/mobile/keep1.net/-1/0/{0}/position/1/',37),
+	('youhuaxing.cn-pc','https://baidurank.aizhan.com/baidu/keep1.net/-1/0/{0}/position/1/',5),
+	('youhuaxing.cn-mo','https://baidurank.aizhan.com/mobile/keep1.net/-1/0/{0}/position/1/',5)
 	]
-	chrome_path = r'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
+	chrome_path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
 	chromedriver_path=r'D:/py3script/selenium测试/chromedriver.exe'
 	options = uc.ChromeOptions()
 	# options.add_argument('--headless')
 	driver = uc.Chrome(options=options,driver_executable_path=chromedriver_path,browser_executable_path=chrome_path)
+	driver.get('chrome://settings/content/popups?search=弹出')
+	time.sleep(1)
+	driver.execute_script(js_pop)
+	time.sleep(1)
 	driver.get('https://www.aizhan.com/')
-	time.sleep(120)
+	is_login(driver)
 	for line in config_list:
 		fname,url_type,max_num = line
 		# 结果保存文件
